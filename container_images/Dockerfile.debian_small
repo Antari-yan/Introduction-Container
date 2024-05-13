@@ -1,0 +1,7 @@
+FROM debian:12-slim
+ARG DEBIAN_FRONTEND=noninteractive
+RUN apt update  \
+    && apt install -y --no-install-recommends htop \
+    && apt autoclean -y \
+    && apt autoremove -y \
+    && rm -rf /var/lib/apt/lists/*

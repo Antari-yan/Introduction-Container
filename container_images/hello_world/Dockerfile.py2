@@ -1,0 +1,28 @@
+FROM python as builder
+LABEL stage=builder
+ENV BOOTLOADER_CC=musl-gcc
+WORKDIR /hello
+RUN apt update  \
+    && apt install -y --no-install-recommends busybox musl musl-dev musl-tools liblzma-dev scons patchelf python3-pip git \
+    && apt autoclean -y \
+    && rm -rf /var/lib/apt/lists/*
+RUN pip install --no-cache-dir pyinstaller staticx
+COPY hello.py .
+RUN pyinstaller --onefile hello.py -n unstatic_hello
+RUN staticx /hello/dist/unstatic_hello /hello/dist/hello
+RUN mkdir tmp
+#CMD ["/hello/dist/hello"]
+
+FROM scratch
+COPY --from=builder /hello/dist/hello /hello
+COPY --from=builder /hello/tmp /tmp
+CMD ["/hello"]
+
+
+# PyInstaller builds aren't fully static (libc and ld.so are still required), through staticx that can be fixed
+# https://github.com/pyinstaller/pyinstaller/wiki/FAQ#gnulinux
+
+# docker build -t hello:py -f Dockerfile.py2 .
+# docker container run --rm hello:py
+# docker images hello:py
+# docker image prune --filter label=stage=builder
