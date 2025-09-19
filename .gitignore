@@ -1,0 +1,6 @@
+data/**/*
+!data/index.html
+
+runc_container/**/*
+!runc_container/hello.c
+!runc_container/config.json
