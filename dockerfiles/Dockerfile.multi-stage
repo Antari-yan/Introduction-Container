@@ -1,0 +1,51 @@
+FROM golang:1-alpine AS builder
+
+# Set working directory
+WORKDIR /app
+
+# Write the Go program using a heredoc
+RUN cat << 'EOF' > main.go
+package main
+
+import (
+  "fmt"
+  "net/http"
+)
+
+func handler(w http.ResponseWriter, r *http.Request) {
+  fmt.Fprintln(w, "Hello, World!")
+}
+
+func main() {
+  http.HandleFunc("/", handler)
+  http.ListenAndServe(":8080", nil)
+}
+EOF
+
+# Build statically linked binary for Alpine
+RUN CGO_ENABLED=0 GOOS=linux go build -o webapp main.go
+
+
+FROM scratch
+
+# Set a non-root user with a numeric UID/GID
+# Scratch has no /etc/passwd, but Docker can still run with USER <UID>:<GID>
+USER 1001:1001
+
+# Copy binary from build stage
+COPY --from=builder /app/webapp /webapp
+
+# Expose the HTTP port
+EXPOSE 8080/tcp
+
+# Run the server
+CMD ["./webapp"]
+
+
+# docker build -t non-root-webserver-binary -f Dockerfile.non-root-scratch .
+# docker container run --rm -d --name non-root-webserver-binary -p 8080:8080 non-root-webserver-binary
+# docker container exec -it non-root-webserver-binary ps -ef
+# docker run --rm -it --pid container:non-root-webserver-binary alpine ps -ef
+# curl http://localhost:8080
+# docker container stop non-root-webserver-binary
+# docker image prune --filter label=stage=builder

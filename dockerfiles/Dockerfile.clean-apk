@@ -1,0 +1,6 @@
+FROM alpine:3
+
+RUN && apk update \
+    && apk upgrade \
+    && apk add --no-cache --update bash \
+    && rm -rf /var/cache/apk/*

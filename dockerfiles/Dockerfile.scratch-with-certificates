@@ -1,0 +1,11 @@
+FROM alpine as builder
+LABEL stage=builder
+
+RUN apk add ca-certificates
+
+
+FROM scratch
+COPY --from=builder /etc/ssl/certs/ca-certificates.crt /usr/lib/ssl/certs
+CMD ["/<binary"]
+
+# Adding the ca-certificates is important if the binary makes outgoing HTTPS connections

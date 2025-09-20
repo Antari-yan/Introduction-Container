@@ -1,0 +1,35 @@
+FROM python:3.13-trixie AS builder
+LABEL stage=builder
+ENV BOOTLOADER_CC=musl-gcc
+
+WORKDIR /hello
+COPY src/hello.py .
+
+RUN apt update  \
+    && apt install -y --no-install-recommends busybox musl musl-dev musl-tools liblzma-dev scons patchelf python3-pip git \
+    && apt autoclean -y \
+    && rm -rf /var/lib/apt/lists/*
+RUN pip install --no-cache-dir --upgrade pip \
+    && pip install --no-cache-dir pyinstaller staticx
+
+# -OO removes Docstrings and other stuff
+# For PyInstaller implicit dependencies(hidden imports) need to be added as "--hidden-import" option,
+# also the "--collect-submodules" can be quite helpful
+RUN python -OO -m PyInstaller -F hello.py --onefile -n unstatic_hello
+# PyInstaller builds aren't fully static (libc and ld.so are still required), through staticx that can be fixed
+# https://github.com/pyinstaller/pyinstaller/wiki/FAQ#gnulinux
+
+
+# With staticx the binary build by the PyInstaller can be made fully static
+RUN staticx --strip /hello/dist/unstatic_hello /hello/dist/hello
+# The "--strip" removes information that is not essential or required for normal and correct execution,
+# potentially resulting in better performance and sometimes significantly less disk space usage
+
+# For python the tmp dir is often required, but scratch images usually can't create directories
+RUN mkdir tmp
+
+
+FROM scratch
+COPY --from=builder /hello/dist/hello /hello
+COPY --from=builder /hello/tmp /tmp
+CMD ["/hello"]

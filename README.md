@@ -5,7 +5,7 @@ All of that is made possible through flexible configuration, Container Images an
 This repository is intended as a short introduction into what containers are, how to run and manage them and the concept of packaging software and its dependencies into a single portable unit.  
 It also covers tools like [Podman](https://podman.io/) and [Docker](https://www.docker.com/), as well as touching on [Kubernetes](https://kubernetes.io/)(K8s).
 
-Anywhere the commands for Podman and Docker overlap the variable `CR` will be used, an easy way to set it is with `OCI=$(command -v podman || command -v docker)`, which selects either `podman` or `docker`, depending on what is installed.
+Anywhere the commands for Podman and Docker overlap the variable `CR` will be used, an easy way to set it is with `CR=$(command -v podman || command -v docker)`, which selects either `podman` or `docker`, depending on what is installed.
 
 ## Setup
 All examples are provided for `Podman` and the `Docker Engine`(Docker CE).  
@@ -72,7 +72,7 @@ Running many VMs wastes system resources and complicate scaling.
 - By 2017–2018, `Kubernetes` was more widely used, and `Docker Swarm` fell into minimal maintenance mode, but it is still available.
 - Because of the minimal maintenance there are many bugs and missing configuration options that are otherwise available for a Standalone Docker. (e.g., `depends_on`, `deploy.mode: replicated-job`, ...)
 
-### Kubernetes
+#### Kubernetes
 - At `Google`, developers needed to manage containers at massive scale.
 - Google built an internal system called `Borg` in the early 2000s to run millions of containers across thousands of machines.
 - In 2014, Google released `Kubernetes` (inspired by Borg) as an open-source orchestration system.
@@ -81,6 +81,7 @@ Running many VMs wastes system resources and complicate scaling.
   - Backing by the [Cloud Native Computing Foundation (CNCF)](https://www.cncf.io/).
   - Strong community support
 - Kubernetes effectively replaced Docker Swarm in most serious production environments.
+- The smallest managable unit in Kubernetes is a `pod`, which is a group of one or more container (checkout [Sharing namespaces between Containers](#sharing-namespaces-between-containers) for how `pods` basically work)
 
 #### The Open Container Initiative (OCI)
 - In 2015, with multiple runtimes and image formats emerging, the industry needed standardization.
@@ -96,8 +97,9 @@ Running many VMs wastes system resources and complicate scaling.
 - Unlike Docker, Podman doesn’t require a background service (`dockerd`) and can run entirely without root privileges, improving security.
 - Podman intentionally mimics Docker’s CLI, so commands like `podman run` are nearly identical to `docker run`.
 - It’s popular in enterprise and security-sensitive contexts and integrates tightly with `systemd` (the Linux init system).
+- Also muses the concept of `pods` like Kubernetes
 
-### Linux Namespaces
+#### Linux Namespaces
 Linux namespaces provide isolation for system resources, meaning a process or a group of processes can operate in its own „namespace,“ unaware of other processes using the same resources in different namespaces. Namespaces isolate processes, allowing them to have their own view of system resources like process IDs (PIDs), file systems, network interfaces, user IDs, and more.
 
 Each type of namespace provides isolation for a specific system resource:
@@ -110,6 +112,16 @@ Each type of namespace provides isolation for a specific system resource:
   - Cgroup namespace: Isolates control group (cgroup) resources, which are used to manage resource allocation (CPU, memory, etc.).
 
 Namespaces are used to provide isolation for containers. Each container is placed in its own namespaces, giving the impression of a separate machine with its own processes, network interfaces, and file system.
+
+#### Windows and Apple
+Both Windows and Apple have developed their own approaches for container and container runtime.
+
+There is [Windows Containers](https://github.com/microsoft/Windows-Containers), which are basically Windows based container, instead of Linux based.  
+So far they one work with Azure and on Windows hosts.
+
+Apple has [container](https://github.com/apple/container), which is basically their own version of a container runtime for Mac.
+
+This repo won't go into detail of either, because they are more like niche products with highly specific restrictions to use them.
 
 
 
@@ -306,6 +318,67 @@ $CR container stop alpine-container
 # $CR container stop $($CR container ls --filter name=alpine-container --quiet)
 ```
 
+### Advanced Commands
+Format the output of list of running Containers:
+```sh
+$CR container ls --format "{{.ID}}: {{.Names}}"
+$CR container ls --format "table {{.ID}}\t{{.Names}}"
+$CR container ls --format "table {{.ID}}\t{{.Names}}\t{{.State}}\t{{.Status}}\t{{.Size}}"
+```
+> [!TIP]  
+> For `docker` it is possible to overwrite the default list output:
+> ```json
+> {
+>   "psFormat": "table {{.ID}}\\t{{.Image}}\\t{{.Status}}\\t{{.Names}}"
+> }
+> ```
+
+Get ID of last created Container:
+```sh
+$CR container ls -lq
+```
+
+Get ID of a Container by name:
+```sh
+$CR container ls --filter name=webserver --quiet
+```
+
+Get Filesystem diff of a Container:
+```sh
+$CR diff $($CR container ls --filter name=webserver --quiet)
+```
+
+Get IP of a container:
+```bash
+$CR container inspect --format \
+  '{{.NetworkSettings.Networks.bridge.IPAddress}}' \
+  $($CR container ls --filter name=webserver --quiet)
+```
+
+Get Env Vars of a Container:
+```bash
+$CR container inspect $($CR container ls --filter name=webserver --quiet) --format='{{range .Config.Env}}{{println .}}{{end}}'
+```
+- `range`: Iterate over an array -> Env array under config
+- `println .`: Print each item in the range
+- `end`: Closes range
+
+Get all network names connected to a container:
+```sh
+$CR inspect $($CR container ls --filter name=webserver --quiet) -f '{{range $k, $v := .NetworkSettings.Networks}}{{printf "%s\n" $k}}{{end}}'
+```
+
+Get log path of a container in `docker`:
+```sh
+sudo ls -alh /var/lib/docker/containers/$(docker inspect $(docker container ls --filter name=webserver --quiet) -f '{{.Id}}')
+sudo ls -alh $(docker inspect $(docker container ls --filter name=webserver --quiet) -f '{{.LogPath}}')
+```
+
+More information about formatting the output can be found here:
+  - [podman inspect](https://docs.podman.io/en/latest/markdown/podman-inspect.1.html)
+  - [docker formatting](https://docs.docker.com/engine/cli/formatting/)
+
+
 
 ### Running and interacting with container
 Let's run a webserver and expose ports to make it accessible (more details about this in [Networking](#networking)):
@@ -336,7 +409,7 @@ $CR container inspect --format='{{.Id}}' web-server
 ```
 > [!NOTE]  
 > Podman and Docker can have different information stored for container.  
-> e.g.: Podman has the "ImageName" key, but docker doesn't.
+> e.g.: Podman has the `ImageName` key, but docker doesn't.
 
 Execute a command in a running container:
 ```sh
@@ -565,6 +638,21 @@ After making container ports available on the host, the host ports can be made a
 > Host ports can't be used twice at the same time.  
 > In Linux you can check all used host ports with: `ss -tulpn`
 
+> [!IMPORTANT]  
+> Podman is using `nftables` for NAT, should it not be installed, it is possible to switch to `iptables`,
+> by adding the following to `/etc/containers/containers.conf`:
+> ```ini
+> [network]
+> firewall_driver="iptables"
+> ```
+
+> [!IMPORTANT]  
+> If the IP Address Range of the container runtime overlapps with e.g. the company IP Address Range,
+> it is possible to encounter unexpected networking issues.  
+> Therefore sometimes it is needed to overwrite the default IP Address Pool.  
+> For docker this can be done in the [daemon configuration](https://docs.docker.com/reference/cli/dockerd/#daemon-configuration-file).
+> For podman it can be defined in [/etc/cni/net.d/](https://github.com/containers/common/blob/main/docs/containers.conf.5.md#network-table)
+
 Docker and Podman provide different networking modes that determine how containers communicate with each other and with the outside world.  
 With `--network host` the network of the host system is used directly and with `--network none` networking can be completely disabled, but both of these options are rarely used.  
 Additionally container can be in multiple networks.
@@ -647,8 +735,12 @@ $CR network rm mynet
 > The network config can be found in `~/.config/cni/net.d/<networkname>.conflist`
 > Upgrading podman is possible but a bit tricky: https://github.com/containers/podman/discussions/25582
 
+> [!NOTE]  
+> Manually created networks aren't cleaned up automatically and take up disk space.  
+> `$CR network prune` or `$CR network prune -f` can be used to remove all unused networks.
 
-### Sharing namespaces between Containers
+
+### Sharing namespaces between containers
 Sometimes it is needed for two containers to communicate with each other directly using the same network namespace, instead of using a virtual network ot other types of namespaces.  
 This is also known as running a `sidecar`, which can be useful for monitoring or configuring another container.  
 Or e.g. for debugging purpose to inspect network traffic with tools like [netshoot](https://github.com/nicolaka/netshoot).
@@ -925,3 +1017,408 @@ Export a `Container Image` to an archive:
 ```sh
 $CR image save alpine:3 -o alpine3.tar.gz
 ```
+
+Import a `Container Image` to an archive:
+```sh
+$CR load < alpine3.tar.gz
+```
+```sh
+$CR load --input alpine3.tar.gz
+```
+
+
+
+## Dockerfile/Containerfile and Container Image building
+### Basics
+While there are many prebuilt images, most real-world projects need custom images.  
+The recipe for building an image is most commonly called a `Dockerfile`.  
+`Containerfile` is part of the [container-libs](https://github.com/containers/container-libs/tree/main) and uses the same syntax, it is what `podman` and it's buildkit `buildah` defaults to.  
+Docker hs it's own buildkit `buildx`.
+
+The reference fo both can be found here:
+  - [Dockerfile](https://docs.docker.com/reference/dockerfile)
+  - [Containerfile](https://github.com/containers/container-libs/blob/main/common/docs/Containerfile.5.md)
+
+For simplicity `Dockerfile` will be used as naming for the examples.
+
+Here is an overview of the more common options:
+```Dockerfile
+# The base image that should be used as foundation.
+# Checkout the different available container registries for fitting container images
+# "scratch" is an empty image, that is always available
+FROM alpine:3
+
+# Copy static content into the container
+COPY <dir-on-host>/<file-on-host> <dir-in-container>/<file-in-container>
+
+# ADD functions similar to COPY but can be used to get files from URLs
+ADD https://example.com/archive.zip <dir-in-container>/<file-in-container>
+ADD git@github.com:user/repo.git <dir-in-container>/<file-in-container>
+
+# Set the user to be used in the container image.
+# The user and group need to be created first, e.g.:
+#   RUN addgroup -S <group> && adduser -S <user> -G <group>
+USER <user>:<group>
+
+# The RUN instruction will execute any commands to create a new layer on top of the current image.
+RUN && apk update \
+    && apk upgrade \
+    && apk add --no-cache --update bash \
+    && rm -rf /var/cache/apk/*
+
+# Mounted secrets (and the created files in '/run/secrets/') are only available in the layer they are added.
+# This is the only way to securely add secrets into a Container Image without leaving any traces of it.
+# In the build command add the "--secret" option, e.g.: -secret id=SECRET1,env=SECRET1
+# Add '&&' only for second and later commands after '--mount', since the mount is not run as a command and filtered out.
+RUN --mount=type=secret,id=SECRET1 \
+    --mount=type=secret,id=SECRET2 \
+    export SECRET1=$(cat /run/secrets/SECRET1) \
+    && export SECRET2=$(cat /run/secrets/SECRET2) \
+    && echo "Secret test: $SECRET1 & $SECRET2"
+
+
+# Expose port, defaults to "/tcp", "/udp can also be specified.
+# If both should be exposed, add a second entry.
+# Doesn't actually publish the port, it functions as a type of documentation.
+EXPOSE 80
+
+# A healthcheck can be used to actively check if the container is still working (e.g.: run cURL against an API it is providing).
+# While useful, configuring them in the Dockerfile is Docker specific and not in the OCI standard.
+# The healthcheck should be defined in the compose or kubernetes file
+HEALTHCHECK [OPTIONS] CMD <command>
+
+# The executable and paramters run at the start of the container, can be overwritten with "--environment ''".
+ENTRYPOINT ["ls", "-a"]
+# ENTRYPOINT ["executable", "param1", "param2"]
+
+# The instructions followed by ENTRYPOINT
+CMD ["-l", "-h"]
+# CMD ["executable","param1","param2"]
+# CMD ["param1","param2"] # Default parameters when ENTRYPOINT is used
+# For ENTRYPOINT and CMD it is not too uncommon that only one of them is used, often only CMD.
+# ENTRYPOINT is sometimes also used to run a script like "docker-entrypoint.sh", which setups the environment and CMD running the actual application.
+#   postgres (https://hub.docker.com/_/postgres) and mariadb (https://hub.docker.com/_/mariadb) are quite known for this.
+# Use ENTRYPOINT if the same executable should be run every time, e.g.: when arguments are provided to the "docker run".
+```
+
+The basic build command is:
+```sh
+$CR build -t mycontainer .
+# -t sets the tag of the image
+```
+
+During build each layer is cached to reduce build time.  
+Sometimes this can lead to issues when some changes are not automatically found, but caching can be disabled with the `--no-cache` option.
+
+For running the build container, the set tag can be used:
+```sh
+$CR run mycontainer
+```
+
+If deesired, it is also possible to build a container and output it into a local directory:
+```sh
+$CR build -t myimage:1 -f Dockerfile.slim  -o "type=local,dest=myimage-1" .
+```
+
+Checkout the [hello-world](dockerfiles/hello-world) for some different coding language examples in the [dockerfiles](dockerfiles/) directory.
+
+> [!IMPORTANT]  
+> When building images containing code, be careful what bas eimage is used.  
+> Images like `alpine` for example use a different `c-compiler` than e.g. `debian`.  
+> This can also be true for different compiler or packages.
+
+> [!NOTE]  
+> By default during build all directories and files in the location of the `Dockerfile` will be loaded before the actual build starts.
+> Depending on the amount and size of the files, this can take a while and may also lead to unintended side effects/security issues.
+> This can be prevented by adding a `.dockerignore` next to the `Dockerfile`
+
+> [!NOTE]  
+> On some setups there might be difficulties when accessing the internet when building a container.  
+> One way to circumvent that is by using the `--network=host` option.  
+> While finding and fixing the responsible issue is better, as a quick fix this also works.
+
+It is possible to define multiple stages, where each stage has their own image to build a container image.  
+The syntax for that is like this:
+```Dockerfile
+FROM <some-iamge> AS <first-stage-name>
+
+FROM <another-iamge>
+COPY --from=<first-stage-name> /<path-in-builder> /<path-in-second-stage>
+```
+For this the first stage will be build first and the second stage can copy things from the first stage, like a static binary, into it's own space.  
+The final image will only contain the second stage and not the first stage.  
+It is also possible to have more stages and also to use the `--target` option to specify which stage is the one to be build at the end.
+
+> [!NOTE]  
+> Each stage creates untagged images, which is nice for caching purposes,
+> but can clogg up the image list.  
+> Removing all images of a specific stage can be done with: `$CR image prune --filter label=stage=<first-stage-name>`
+
+Checkout the [Dockerfile.multi-stage.yml](dockerfiles/Dockerfile.multi-stage.yml) as an example.
+
+
+### Muli-arch Container Images
+Modern images are often built for multiple architectures (e.g., amd64, arm64).  
+When building for multiple architectures, it creates a manifest list that points to multiple images, one per architecture.  
+Registries and runtimes then automatically pull the right one for the platform.
+This is critical in environments that consist of mixed architectures (e.g., x86 servers, ARM-based laptops, Raspberry Pi clusters).  
+Sadly the buildkits are limited to either directly push the build image into a container registry or output it into a directory.
+
+To run different architectures locally the QEMU emulation support (binfmt_misc) needs to be enabled in the kernel.  
+This can be done by running the `qemu-user-static` container:
+```sh 
+sudo $CR run --rm --privileged docker.io/multiarch/qemu-user-static --reset -p yes 
+```
+This works because the container shares the `kernel` with the host system and therefore if it changes things on the kernel,
+like enabling the QEMU emulation support, the host system is also affected by it.  
+Which is why especially for `podman` the container has to be run as root to have the required permissions.
+
+Test it:
+```sh
+$CR run --rm --platform=linux/arm64 alpine:3 uname -m
+# aarch64
+
+$CR run --rm --platform=linux/amd64 alpine:3 uname -m
+# x86_64
+```
+
+#### Podman
+
+Enable the QEMU emulation support (binfmt_misc):
+```sh 
+sudo $podman run --rm --privileged docker.io/multiarch/qemu-user-static --reset -p yes 
+```
+
+```sh
+podman build \
+  --platform linux/amd64,linux/arm64 \
+  -t localhost:5000/mymultiatch:0.1 \
+  .
+```
+
+Check for which architectures the image is available for:
+```
+podman manifest inspect localhost:5000/mymultiatch:0.1
+```
+
+#### Docker
+Dockers `buildx` is capable to build multi-arch images with a custom builder, that uses individual container to build each architecture. 
+Therefore it doesn't need the QEMU emulation support (binfmt_misc) installed on the host.  
+
+Create a builder:
+```sh
+docker buildx create --name builder
+docker buildx inspect builder --bootstrap
+docker buildx use builder
+```
+
+Build the images and push it to the registry:
+```sh
+docker buildx build \
+  --push \
+  --platform linux/amd64,linux/arm64 \
+  --output=type=image,push=true,registry.insecure=true \
+  -f Dockerfile \
+  --tag localhost:5000/mymultiatch:0.1 .
+```
+
+Check for which architectures the image is available for:
+```sh
+docker manifest inspect localhost:5000/mymultiatch:0.1 -v
+```
+
+Build the image and save it to the same directory:
+```sh
+docker buildx build \
+  --platform linux/amd64,linux/arm64 \
+  --output=type=local,dest=$PWD \
+  -f Dockerfile \
+  --tag mymultiatch:0.1 .
+```
+
+Stop the custom builder:
+```bash
+docker container stop buildx_buildkit_builder0
+```
+
+
+### Best practices
+
+#### Use annotations during build
+The [container image spec](https://github.com/opencontainers/image-spec) also specifies some `annotations` that are recommended to be added during the build process.  
+These include information like who build the image, where can the source code be found, etc., an overview can be found [here](https://github.com/opencontainers/image-spec/blob/main/annotations.md).
+
+They can be added during build with the `--annotation` option:
+  - `--annotation <some-key>=<some-value>`
+For general information about the image the `manifest-descriptor:` prefix should be used:
+  -  `--annotation manifest-descriptor:org.opencontainers.image.url=<url-to-source>`
+
+> [!NOTE]  
+> Using labels for these information is possible and still recommended and used by some,
+> but has been superseded by annotations.
+
+> [!IMPORTANT]  
+> For `GitLab` instances that don't have the [Container registry metadata database](https://docs.gitlab.com/administration/packages/container_registry_metadata_database/),
+> using `manifest-descriptor` breakes some of the featuers in the Container Registry, like the pulish date and image size.
+> Currenlty the Container registry metadata databaseis only mandatory in versions from the later halve of `2027`: [epics: #5521](https://gitlab.com/groups/gitlab-org/-/epics/5521)
+
+#### Reduce image size
+Reducing the image size helps save space and cost on the host system.  
+It can be done easily by doing small adjustments when building the container image.  
+Additionally there are also tools like [slim](https://github.com/slimtoolkit/slim), which can be useful for reducing image size.
+
+##### Container image layer optimizastion
+A simple way of reducing the container image size is by optimizing the individual layers.  
+
+When installing a package via a package registry, the package list should always be updated, but this also leads to the list still being contained in the image:
+```Dockerfile
+RUN apt update
+RUN apt upgrade -y \
+  && apt install htop
+```
+
+Dont do it like this:
+```Dockerfile
+RUN apt update
+RUN apt upgrade -y \
+RUN apt install htop \
+RUN apt upgrade -y \
+RUN apt autoclean -y \
+RUN apt autoremove -y \
+RUN apt clean -y \
+RUN rm -rf /var/lib/apt/lists* /tmp/* /var/tmp/*
+```
+The layers stack on top of each other, so while the end result might look good, the individual layers still contain the things that are removed at a later step.
+
+Do it like this:
+```Dockerfile
+RUN apt update \
+  && apt upgrade -y \
+  && apt install htop \
+  && apt autoclean -y \
+  && apt autoremove -y \
+  && apt clean -y \
+  && rm -rf /var/lib/apt/lists* /tmp/* /var/tmp/*
+```
+Here the unneeded files are immediately removed and no space is wasted.
+
+Checkout these example:
+  - [Dockerfile.clean-apk](dockerfiles/Dockerfile.clean-apk)
+  - [Dockerfile.clean-apt](dockerfiles/Dockerfile.clean-apt)
+  - [Dockerfile.clean-python](dockerfiles/Dockerfile.clean-python)
+
+
+##### Use multi-stage builds
+With multi-stage builds it is easily possible to reduce the image size, because only the final stage is included in the image.  
+This is quite useful if, e.g.: an application that is build in one stage doesn't need all the dependencies to run compared to when it is build.
+
+Checkout these example:
+  - [Dockerfile.multi-stage.yml](dockerfiles/Dockerfile.multi-stage)
+  - [Dockerfile.non-root](dockerfiles/Dockerfile.non-root)
+  - [Dockerfile.non-root-scratch](dockerfiles/Dockerfile.non-root-scratch)
+
+> [!NOTE]  
+> For applications with outgoing connections like `HTTPS`,
+> It is usually required to have the `public certificates` of the target URL:
+>   - For normal valid certificates it usually suffices to install the `ca-certificates` package
+>   - For `self-signed` certificates they need to be added directly
+> Checkout the [Dockerfile.scratch-with-certificates](Dockerfile.scratch-with-certificates) example.
+
+> [!NOTE]  
+> Each stage results in a stored untagged image.  
+> They can be cleaned up with: `$CR image prune --filter label=stage=builder`
+
+
+##### Use small base images
+While it might seem intuitive for some to use images like `debian`, there are often smaller base images available, like:
+  - Instead of `debian:13` use `debian:13-slim`
+  - Instead of `python:3.13` (based on debian) use `python:3.13-slim` or switch to an `alpine` base image: `python:3.13-alpine`
+
+`alpine` is one of the smallest Linux distributions and great to use in a container environmet.  
+But be careful that things like the `c-compiler` can differ compared to other distributions.
+
+There are also the [distroless](https://github.com/GoogleContainerTools/distroless) images which can be used for a wide varity.
+
+But nothing beats using an empty `scratch` image that only contains a static binary, though that is not always easily achievable.  
+For applications with outgoing `HTTPS` connections add the `ca-certificates`, like in the [Dockerfile.scratch-with-certificates](Dockerfile.scratch-with-certificates) example.
+
+Checkout the examples in the [Use multi-stage builds](#use-multi-stage-builds) section.
+
+
+
+#### Use non-root
+Using a non-root user in a container improves security because:
+  - In some cases, having root as user can be escalated to the root on the host (e.g., through kernel or runtime escapes)
+  - A non-root process inside a container limits what can be read, written, or executed
+  - It can prevent accidental (or malicious) interference with other workloads (e.g. when using mounts)
+  - It follows the `Least Privilege Principle`:
+    - Most applications don’t need root access to run
+    - Running as a less-privileged user means even if compromised, the attacker has fewer permissions
+
+Checkout these example:
+  - [Dockerfile.non-root](dockerfiles/Dockerfile.non-root)
+  - [Dockerfile.non-root-scratch](dockerfiles/Dockerfile.non-root-scratch)
+
+
+#### Version pinning
+Wherever possible use version pinning:
+  - the base container image
+  - the installed packages
+  - the installed dependencies
+  - ...
+
+Using `latest` can always lead to breaking changes when rebuilding a container image
+
+
+#### Application profiling
+It is possible to limit the provided `CPU` and `RAM` when running container.  
+This is especially important for applications that scale horizontaly.  
+Only by doing so is it possible to properly calculate how big the host system or cluster is needed to be.
+
+For that there are many application profiling tools like [scalene](https://pypi.org/project/scalene/) or [cProfile](https://docs.python.org/3/library/profile.html) for `python`.  
+Additionaly with `$CR stats` it is possible to check the currently used `CPU` and `RAM` for each running container.
+
+For `kubernetes` the `top` command can be used:
+  - `kubectl top pod <POD_NAME> --containers`
+  - `kubectl top node <NODE_NAME>`
+
+
+#### Security
+There are tools like [trivy](https://github.com/aquasecurity/trivy) and [osv-scanner] (https://github.com/google/osv-scanner) that should be used to check container images for vulnerabilities.
+
+> [!IMPORTANT]  
+> The vulnerability checks are always a snapshot at a specific point in time.  
+> Just because there was no vulnerability found during the initial check,
+> That doesn't mean that there will not be any vulnerability found in the future.  
+> Vulnerability checks should be done on a regular and continuous basis.
+
+
+#### Sign the container images
+With tools like [cosign](https://github.com/sigstore/cosign) have the possibility to sign contaier images.
+
+```sh
+BINARY_NAME="cosign-linux-amd64"
+GIT_PROJECT=sigstore/cosign
+
+curl -L -o cosign $(curl -IkLs -o /dev/null -w %{url_effective} https://github.com/$GIT_PROJECT/releases/latest/download)/$BINARY_NAME
+chmod +x cosign
+
+# Generate Keypair
+./cosign generate-key-pair
+
+# Sign image
+./cosign sign -y --key cosign.key localhost:5000/myfirstimage:3
+
+# Verify
+./cosign verify --key cosign.pub localhost:5000/myfirstimage:3
+```
+
+
+#### Automate the build process
+Following all best practices can make the developement process tedious, which is why automating the process is highly recommended:
+  - For `GitHub` there are a varity of [GitHub Actions](https://docs.github.com/en/actions) available.
+  - For `GitLab` there are also a varity oc [CI Templates](https://docs.gitlab.com/ci/examples/) available.
+
+> [!NOTE]  
+> Checkout this GitLab CI Component:  
+> [Container CI Component](https://jugit.fz-juelich.de/iek-10/public/developer-tools/gitlab-ci-components/container)

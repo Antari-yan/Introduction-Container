@@ -1,0 +1,4 @@
+FROM alpine:latest
+
+RUN apk add --no-cache --update bind-tools drill \
+    && rm -rf /var/cache/apk/*

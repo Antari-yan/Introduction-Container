@@ -1,0 +1,20 @@
+FROM python:3.13-alpine AS builder
+
+WORKDIR /hello
+COPY src/hello.py .
+
+RUN apk add --no-cache binutils
+RUN pip install --no-cache-dir --upgrade pip \
+    && pip install --no-cache-dir pyinstaller
+
+# -OO removes Docstrings and other stuff
+# For PyInstaller implicit dependencies(hidden imports) need to be added as "--hidden-import" option,
+# also the "--collect-submodules" can be quite helpful
+RUN python -OO -m PyInstaller -F hello.py --onefile -n hello
+# PyInstaller builds aren't fully static (libc and ld.so are still required), through staticx that can be fixed
+# https://github.com/pyinstaller/pyinstaller/wiki/FAQ#gnulinux
+
+CMD ["/hello/dist/hello"]
+
+# PyInstaller builds aren't fully static (libc and ld.so are still required), through staticx that can be fixed
+# https://github.com/pyinstaller/pyinstaller/wiki/FAQ#gnulinux
