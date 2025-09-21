@@ -97,7 +97,7 @@ Running many VMs wastes system resources and complicate scaling.
 - Developed by `Red Hat` as an open-source daemonless and rootless alternative to Docker.
 - Unlike Docker, Podman doesn’t require a background service (`dockerd`) and can run entirely without root privileges, improving security.
 - Podman intentionally mimics Docker’s CLI, so commands like `podman run` are nearly identical to `docker run`.
-- It’s popular in enterprise and security-sensitive contexts and integrates tightly with `systemd` (the Linux init system).
+- It’s popular in enterprise and security-sensitive contexts and integrates tightly with `systemd` (the Linux system and service manager).
 - Also muses the concept of `pods` like Kubernetes
 
 #### Linux Namespaces
@@ -120,7 +120,7 @@ Both Windows and Apple have developed their own approaches for container and con
 There is [Windows Containers](https://github.com/microsoft/Windows-Containers), which are basically Windows based container, instead of Linux based.  
 So far they one work with Azure and on Windows hosts.
 
-Apple has [container](https://github.com/apple/container), which is basically their own version of a container runtime for Mac.
+Apple has [container](https://github.com/apple/container), which is basically their own version of a container runtime for Mac, that uses virtual machines to run container.
 
 This repo won't go into detail of either, because they are more like niche products with highly specific restrictions to use them.
 
@@ -195,16 +195,16 @@ How it fits together:
 
 ### Docker
 - Released in 2013, Docker was the first tool to make containers accessible to developers.
-- Provides a CLI (docker) and relies on a daemon process (dockerd) that runs in the background to manage containers.
+- Provides a CLI (docker) and relies on a daemon process (`dockerd`) that runs in the background to manage containers.
 - Widely adopted in industry; most tutorials and documentation still use Docker commands.
 - Strong ecosystem: Docker Hub (public image registry), Docker Compose (multi-container applications).
 - The Docker Engine, is a client-server application that includes:
-  - Docker Daemon (dockerd): Runs in the background and manages Docker objects like containers, images, networks, and volumes. It listens for Docker API requests and is responsible for building, running, and distributing Docker containers.
-  - Docker Client (docker): A command-line interface (CLI) tool that allows users to interact with the Docker Daemon. When you type commands like docker run or docker build, the client sends these commands to the Docker Daemon, which then carries them out.
-  - Containerd: A core container runtime component used by Docker to manage container lifecycle operations. It handles downloading and storing container images, container execution, and storage management.
-  - runc: A lightweight, low-level container runtime that creates and runs containers based on the OCI (Open Container Initiative) standards. runc is the tool that Docker uses under the hood to start containers.
+  - Docker Daemon (`dockerd`): Runs in the background and manages Docker objects like containers, images, networks, and volumes. It listens for Docker API requests and is responsible for building, running, and distributing Docker containers.
+  - Docker Client (`docker`): A command-line interface (CLI) tool that allows users to interact with the Docker Daemon. When you type commands like docker run or docker build, the client sends these commands to the Docker Daemon, which then carries them out.
+  - `Containerd`
+  - `runc`
   - Networking Components: Docker installs components to set up and manage container networks. This includes the Docker network bridge (docker0) and tools for setting up networking options like overlay networks for multi-host container networking.
-  - Docker CLI Plugins: Additional command-line tools that extend the Docker CLI capabilities
+  - Docker CLI Plugins: Additional command-line tools that extend the Docker CLI capabilities 
 
 Pros
   - Most popular and widely supported container tool.
@@ -257,10 +257,12 @@ Most commands are identical between Docker and Podman, which makes switching bet
 | List running container (short) | `podman ps`           | `docker ps`          |
 | List running container (long)  | `podman container ls` | `docker container ls`|
 
-To simplify set an env var with either `podman` or `docker` (whatever is installed)
+Set the `CR` variable depending on what is installed:
+  - Podman: `CR=podman`
+  - Docker: `CR=docker`
+
+Check if it works:
 ```sh
-# Use "podman" if available or use "docker"
-CR=$(command -v podman || command -v docker)
 $CR help
 ```
 
@@ -306,7 +308,6 @@ Usually, container images are build with a predefined `CMD` or `ENTRYPOINT`, whi
 - `ENTRYPOINT` specifies the main executable that always runs (none by default)
 - `CMD` specifies arguments that will be fed to the `ENTRYPOINT`
 Both can be overwritten, and it is not unusual that only one of them is used.
-
 
 Stopping and removing a container:
 ```sh
@@ -508,7 +509,7 @@ To create a named volume use `$CR volume create <volume-name>` and for removing 
 > Unused named volumes are not automatically cleaned up and need to be removed manually.  
 > All unused volumes can be removed with: `$CR volume prune`
 
-It is also possible to use different storage drivers like `nfs`.  
+It is also possible to use different storage drivers like `nfs` ([Network File System](https://en.wikipedia.org/wiki/Network_File_System)).  
 For that the option `--mount` can be used.
 
 > [!IMPORTANT]  
@@ -734,6 +735,10 @@ docker run --rm --network mynet busybox ping webserver
 $CR container stop webserver
 $CR network rm mynet
 ```
+
+> [!NOTE]  
+>  capabilities are explained in detail in the [Limit capabilities](#limit-capabilities) section.
+
 > [!IMPORTANT]  
 > Only when using a custom network will a container receive a DNS name.  
 > The DNS name is always the name set when running the container and the hostname of the container.  
@@ -742,7 +747,6 @@ $CR network rm mynet
 > Therefore it is advised to either use a different hostname from the deployment name.  
 > most of the time the hostname isn't needed, so not explicitly setting it is better.  
 > Checkout the [Docker Swarm DNS](#dns) example for more details.
-
 
 > [!IMPORTANT]  
 > For podman version 3.4.4 which contains a bug for the network CNI plugin:  
@@ -819,6 +823,10 @@ Sometimes a login is require into the desired `Container Registry` with `$CR log
 > All unused images can be removed with: `$CR container image prune`.  
 > Or forceully wiht `$CR container image prune -a -f`.
 
+> [!IMPORTANT]  
+> Beware of the pull/rate limit of the publich container registries.  
+> To check the current limit for `DockerHub` checkout the [Get DockerHub pull rate limit](#get-dockerhub-pull-rate-limit) section.
+
 Shoutout to the [linuxserver](https://github.com/linuxserver) group for maintaining and providing many day-to-day applications as container images, via their own [lscr.io](https://docs.linuxserver.io/images-by-category/) registry.
 
 
@@ -846,6 +854,11 @@ $CR run \
   --entrypoint htpasswd \
   docker.io/httpd:2-alpine -Bbn testuser testpassword > data/registry/auth/htpasswd
 ```
+
+> [!NOTE]  
+> While `self-signed certificates` are fine for internal and development setups,
+> in production setups proper valid certificates should be used.  
+> One of the most well-known certificate provider would be [Let's Encrypt](https://letsencrypt.org/).
 
 Add the certificate to trust store:
   - Podman:
@@ -922,10 +935,6 @@ $CR container rm registry
 
 
 ## Container Images
-Containers run from `images`.
-An image is a `packaged filesystem` with all the files, libraries, and metadata needed to create a container.
-It’s the blueprint from which containers are launched.
-
 An image is like a snapshot of an environment, it contains most importantly:
   - application code or a binary
   - packages (optional)
@@ -1202,6 +1211,11 @@ $CR run --rm --platform=linux/amd64 alpine:3 uname -m
 # x86_64
 ```
 
+> [!NOTE]  
+> It is also possible to build images for different architectures on separate hosts
+> and combine them by creating a manifest.
+
+
 #### Podman
 
 Enable the QEMU emulation support (binfmt_misc):
@@ -1426,6 +1440,10 @@ For `kubernetes` the `top` command can be used:
   - `kubectl top pod <POD_NAME> --containers`
   - `kubectl top node <NODE_NAME>`
 
+> [!NOTE]  
+> The `kubectl` command is comparable to the `podman` and `docker` commands.  
+> Just that is used to interact with Kubernetes.
+
 Lastly, when developing an application that is `multi-processing/-treading` it might happen that dangling processes or threads are not removed properly.  
 For that checkout the [docker_process_count.bash](scripts/docker_process_count.bash) script which can output the total amount of threads and processes for each running container.
 
@@ -1516,16 +1534,8 @@ services:
         # "volume" is for named volumes, they can be setup and declared on the same level as "services"
     environment:  # "environment" contains a mapping for all env variables to be set in the container
       SOME_KEY: <some-value>
-    healthcheck:  # A healtcheck can be used to run a continuous test if the container is still functioning
+    healthcheck:  # A healthcheck can be used to run a continuous test if the container is still functioning
       test: wget -q --spider http://127.0.0.1:80
-    # In the logging section it is possible to configure how logs from the container should be handeld.
-    # By default it doesn't limit the amount of logs which can completly fill the host disk space.
-    # Therefore limiting logs is always recommended
-    logging:
-      driver: "json-file"
-      options:
-        max-file: "5"
-        max-size: "10m"
 ```
 
 By default if in the same directory as the compose file a `.env` variable exists, it will be read automatically.
@@ -1571,7 +1581,7 @@ $CR compose -f compose-files/docker-compose.networking.yml down
 ```
 
 > [!IMPORTANT]  
-> The DNS name ina contaienr is always the service name and the hostname of the container.  
+> The DNS name in a container is always the service name and the hostname of the container.  
 > This can especially lead to issues when running multiple instances of a container using `replicas`.  
 > Therefore it is advised to either use a different hostname from the service name.  
 > Most of the time the hostname isn't needed, so not explicitly setting it is better.  
@@ -1613,6 +1623,11 @@ $CR inspect $($CR container ls --filter name=webserver --quiet) --format "{{json
 grep -Eo '"[^"]*" *(: *([0-9]*|"[^"]*")[^{}\["]*|,)?|[^"\]\[\}\{]*|\{|\},?|\[|\],?|[0-9 ]*,?' |
 awk '{if ($0 ~ /^[}\]]/ ) offset-=4; printf "%*c%s\n", offset, " ", $0; if ($0 ~ /^[{\[]/) offset+=4}'
 ```
+- The `inspect` section extracts the `.State.Health` field from a running container named `webserver`
+- The `grep` section takes the returned `JSON` output from the `inspect` and breaks it into multiple lines
+- The `awk` section basically makes a pretty-print of the content
+For simplicity the package `jq` can also be used instead of `grep` and `awk`.
+
 
 ### Limit logging
 In the logging section of a service it is possible to configure how logs from the container should be handeld.  
