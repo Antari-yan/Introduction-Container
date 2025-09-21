@@ -18,7 +18,8 @@ One of them should be installed, which can be done through their installation in
 > https://bugs.launchpad.net/ubuntu/+source/libpod/+bug/2024394  
 > A workaround is to change the `cniVersion` for a network from `1.0.0` to `0.4.0`  
 > The network config can be found in `~/.config/cni/net.d/<networkname>.conflist`
-> Upgrading podman is possible but a bit tricky: https://github.com/containers/podman/discussions/25582
+> Upgrading podman is possible but a bit tricky: https://github.com/containers/podman/discussions/25582  
+> A general recommendation would be to use a newer distribution.
 
 While it won't be covered, both also have a UI tool:
   - [Podman Desktop](https://podman-desktop.io/docs/installation) (No License required)
@@ -349,19 +350,23 @@ $CR diff $($CR container ls --filter name=webserver --quiet)
 ```
 
 Get IP of a container:
-```bash
+```sh
 $CR container inspect --format \
   '{{.NetworkSettings.Networks.bridge.IPAddress}}' \
   $($CR container ls --filter name=webserver --quiet)
 ```
 
 Get Env Vars of a Container:
-```bash
+```sh
 $CR container inspect $($CR container ls --filter name=webserver --quiet) --format='{{range .Config.Env}}{{println .}}{{end}}'
 ```
 - `range`: Iterate over an array -> Env array under config
 - `println .`: Print each item in the range
 - `end`: Closes range
+Sometimes `printenv` and `printenv <var>` are also available:
+```
+$CR exec $(docker container ls --filter name=webserver --quiet) printenv
+```
 
 Get all network names connected to a container:
 ```sh
@@ -383,7 +388,7 @@ More information about formatting the output can be found here:
 ### Running and interacting with container
 Let's run a webserver and expose ports to make it accessible (more details about this in [Networking](#networking)):
 ```sh
-$CR container run -d --rm --name web-server --publish 8080:80 docker.io/nginx:1-alpine
+$CR container run -d --rm --name webserver --publish 8080:80 docker.io/nginx:1-alpine
 # The "docker.io/" image prefix is only important for podman, more about that in [Container Registries](#container-registries)
 # 8080 -> the host port
 # 80 -> the container port
@@ -400,12 +405,12 @@ Open the nginx start page:
 
 Get detailed information about the running container:
 ```sh
-$CR container inspect web-server
+$CR container inspect webserver
 ```
 
 Filter out specific information:
 ```sh
-$CR container inspect --format='{{.Id}}' web-server
+$CR container inspect --format='{{.Id}}' webserver
 ```
 > [!NOTE]  
 > Podman and Docker can have different information stored for container.  
@@ -413,13 +418,13 @@ $CR container inspect --format='{{.Id}}' web-server
 
 Execute a command in a running container:
 ```sh
-$CR container exec $($CR container ls --filter name=web-server --quiet) cat /etc/os-release
+$CR container exec $($CR container ls --filter name=webserver --quiet) cat /etc/os-release
 ```
 
 Open an interactive shell in a running container:
 ```sh
 # 
-$CR container exec -it $($CR container ls --filter name=web-server --quiet) /bin/sh
+$CR container exec -it $($CR container ls --filter name=webserver --quiet) /bin/sh
 ```
 Run the following commands in the container:
 ```sh
@@ -432,7 +437,7 @@ exit
 
 Stop the webserver:
 ```sh
-$CR container stop web-server
+$CR container stop webserver
 ```
 
 #### Using the API
@@ -443,14 +448,14 @@ Create Container:
 ```sh
 curl -XPOST --unix-socket /var/run/docker.sock -d '{"Image":"nginx:1-alpine"}' \
   -H 'Content-Type: application/json' \
-  http://localhost/containers/create?name=web-server
+  http://localhost/containers/create?name=webserver
 ```
 
 Start Container:
 ```sh
 curl -XPOST --unix-socket /var/run/docker.sock \
   -H 'Content-Type: application/json' \
-  http://localhost/containers/$(docker container ls --all --filter name=web-server --quiet)/start
+  http://localhost/containers/$(docker container ls --all --filter name=webserver --quiet)/start
 ```
 
 Show running Containers:
@@ -469,7 +474,7 @@ Stop Container:
 ```sh
 curl -XPOST --unix-socket /var/run/docker.sock \
   -H 'Content-Type: application/json' \
-  http://localhost/containers/$(docker container ls --all --filter name=web-server --quiet)/stop
+  http://localhost/containers/$(docker container ls --all --filter name=webserver --quiet)/stop
 
 docker ps --all
 ```
@@ -478,7 +483,7 @@ Delete Container:
 ```sh
 curl -XDELETE --unix-socket /var/run/docker.sock \
   -H 'Content-Type: application/json' \
-  http://localhost/containers/$(docker container ls --all --filter name=web-server --quiet)
+  http://localhost/containers/$(docker container ls --all --filter name=webserver --quiet)
 
 docker ps --all
 ```
@@ -525,12 +530,12 @@ echo '<h1>Hello from a persistent volume!</h1>' > data/index.html
 Use any of the following examples and open the nginx start page:
   - in a browser: http://localhost:8080
   - in CLI: curl http://localhost:8080
-Stopping (`$CR stop web-server `) and restarting the container should always show the Updated start page.
+Stopping (`$CR stop webserver `) and restarting the container should always show the Updated start page.
 
 #### Bind mount example
 ```sh
 $CR container run --rm -d \
-  --name web-server \
+  --name webserver \
   -p 8080:80 \
   -v ./data:/usr/share/nginx/html:ro \
   docker.io/nginx:1-alpine
@@ -553,7 +558,7 @@ $CR container run --rm \
 Run the webserver with the volume attached:
 ```sh
 $CR container run --rm -d \
-  --name web-server \
+  --name webserver \
   -p 8080:80 \
   -v nginx-data:/usr/share/nginx/html \
   nginx
@@ -598,7 +603,7 @@ $CR container run --rm \
 Run the webserver with the volume attached:
 ```sh
 $CR container run --rm -d \
-  --name web-server \
+  --name webserver \
   -p 8080:80 \
   -v nginx-data:/usr/share/nginx/html \
   nginx
@@ -667,15 +672,15 @@ Additionally container can be in multiple networks.
 
 Start a webserver:
 ```sh
-podman container run --rm -d --name web-server --network podman -p 8080:80 -p 8443:443 docker.io/nginx:1-alpine
+podman container run --rm -d --name webserver --network podman -p 8080:80 -p 8443:443 docker.io/nginx:1-alpine
 ```
 ```sh
-docker container run --rm -d --name web-server -p 8080:80 -p 8443:443 docker.io/nginx:1-alpine
+docker container run --rm -d --name webserver -p 8080:80 -p 8443:443 docker.io/nginx:1-alpine
 ```
 
 Retrieve the private IP address of the webserver:
 ```sh
-WEB_SERVER_IP=$($CR inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' $($CR container ls --filter name=web-server --quiet))
+WEB_SERVER_IP=$($CR inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' $($CR container ls --filter name=webserver --quiet))
 ```
 
 Access the webserver start page from a new container:
@@ -701,8 +706,8 @@ For example:
 
 ```sh
 $CR network create mynet
-$CR container run --rm -d --name web-server --network mynet docker.io/nginx:1-alpine
-WEB_SERVER_IP=$($CR inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' $($CR container ls --filter name=web-server --quiet))
+$CR container run --rm -d --name webserver --network mynet docker.io/nginx:1-alpine
+WEB_SERVER_IP=$($CR inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' $($CR container ls --filter name=webserver --quiet))
 ```
 
 ```sh
@@ -710,6 +715,7 @@ podman run --rm --cap-add=NET_RAW busybox ping ${WEB_SERVER_IP}
 # this should fail, abort with ctrl+c
 
 podman run --rm --cap-add=NET_RAW --network mynet busybox ping ${WEB_SERVER_IP}
+podman run --rm --cap-add=NET_RAW --network mynet busybox ping webserver
 # this should succeed
 
 # ping needs the ability to open raw sockets,
@@ -720,13 +726,23 @@ docker run --rm busybox ping ${WEB_SERVER_IP}
 # this should fail, abort with ctrl+c
 
 docker run --rm --network mynet busybox ping ${WEB_SERVER_IP}
+docker run --rm --network mynet busybox ping webserver
 # this should succeed
 ```
 
 ```sh
-$CR container stop web-server
+$CR container stop webserver
 $CR network rm mynet
 ```
+> [!IMPORTANT]  
+> Only when using a custom network will a container receive a DNS name.  
+> The DNS name is always the name set when running the container and the hostname of the container.  
+> This can especially lead to issues when running multiple instances of a container,
+> which is relevant for deployments with `compose files`.  
+> Therefore it is advised to either use a different hostname from the deployment name.  
+> most of the time the hostname isn't needed, so not explicitly setting it is better.  
+> Checkout the [Docker Swarm DNS](#dns) example for more details.
+
 
 > [!IMPORTANT]  
 > For podman version 3.4.4 which contains a bug for the network CNI plugin:  
@@ -749,19 +765,19 @@ Basically, `pods` use the concept of behind `sidecars` to group multiple contain
 
 ```sh
 # Start nginx
-$CR container run --rm -d --name web-server -v ./data:/usr/share/nginx/html:ro docker.io/nginx:1-alpine
+$CR container run --rm -d --name webserver -v ./data:/usr/share/nginx/html:ro docker.io/nginx:1-alpine
 
 # Start BusyBox, sharing nginx's network namespace
-$CR container run --rm --network container:$($CR container ls --filter name=web-server --quiet) busybox wget -qO- http://127.0.0.1
+$CR container run --rm --network container:$($CR container ls --filter name=webserver --quiet) busybox wget -qO- http://127.0.0.1
 
 # Start BusyBox, sharing nginx's PID namespace
-$CR container run --rm --pid container:$($CR container ls --filter name=web-server --quiet) busybox ps aux
-$CR container run  -it --rm --pid container:$($CR container ls --filter name=web-server --quiet) busybox cat /proc/1/environ
+$CR container run --rm --pid container:$($CR container ls --filter name=webserver --quiet) busybox ps aux
+$CR container run  -it --rm --pid container:$($CR container ls --filter name=webserver --quiet) busybox cat /proc/1/environ
 
 # Start BusyBox, sharing nginx's volumes
-$CR container run --rm --volumes-from web-server busybox ls -al /usr/share/nginx
+$CR container run --rm --volumes-from webserver busybox ls -al /usr/share/nginx
 
-$CR container stop $($CR container ls --filter name=web-server --quiet)
+$CR container stop $($CR container ls --filter name=webserver --quiet)
 ```
 Additionally there is the `--ipc` option to share inter-process communication like `/dev/shm`.
 
@@ -1031,7 +1047,7 @@ $CR load --input alpine3.tar.gz
 ## Dockerfile/Containerfile and Container Image building
 ### Basics
 While there are many prebuilt images, most real-world projects need custom images.  
-The recipe for building an image is most commonly called a `Dockerfile`.  
+The recipe for building an image is most commonly called a `Dockerfile`, which is also the default filename.  
 `Containerfile` is part of the [container-libs](https://github.com/containers/container-libs/tree/main) and uses the same syntax, it is what `podman` and it's buildkit `buildah` defaults to.  
 Docker hs it's own buildkit `buildx`.
 
@@ -1121,6 +1137,10 @@ $CR build -t myimage:1 -f Dockerfile.slim  -o "type=local,dest=myimage-1" .
 ```
 
 Checkout the [hello-world](dockerfiles/hello-world) for some different coding language examples in the [dockerfiles](dockerfiles/) directory.
+
+> [!IMPORTANT]  
+> For running some kind of API as application use `0.0.0.0:<port>`.  
+> This makes the API properly available in the container and accessible when connected to the host or to other container.
 
 > [!IMPORTANT]  
 > When building images containing code, be careful what bas eimage is used.  
@@ -1262,6 +1282,12 @@ For general information about the image the `manifest-descriptor:` prefix should
 > using `manifest-descriptor` breakes some of the featuers in the Container Registry, like the pulish date and image size.
 > Currenlty the Container registry metadata databaseis only mandatory in versions from the later halve of `2027`: [epics: #5521](https://gitlab.com/groups/gitlab-org/-/epics/5521)
 
+#### Healthchecks
+While the `HEALTHCHECK` option in the Dockerfile/Containerfile is `docker` specific it is good to add some form of capability that allows running a healthcheck in the deplyoment configuration.  
+For APIs this is quite simple when tools like `curl` or `wget` are available in the container.  
+For other types of applications it has to be implemented differently by adding options to e.g. trigger a function that checks if the application is stil responding
+or something to check if the process is working.
+
 #### Reduce image size
 Reducing the image size helps save space and cost on the host system.  
 It can be done easily by doing small adjustments when building the container image.  
@@ -1359,7 +1385,6 @@ Checkout these example:
   - [Dockerfile.non-root](dockerfiles/Dockerfile.non-root)
   - [Dockerfile.non-root-scratch](dockerfiles/Dockerfile.non-root-scratch)
 
-
 #### Version pinning
 Wherever possible use version pinning:
   - the base container image
@@ -1367,7 +1392,26 @@ Wherever possible use version pinning:
   - the installed dependencies
   - ...
 
-Using `latest` can always lead to breaking changes when rebuilding a container image
+Using `latest` can always lead to breaking changes when rebuilding a container image.
+
+Most images use semantic versioning and for these at least the used `major` or `minor` version should be specified.  
+For images like `python` who additionally have the os version as suffix like `-trixie` or `-alpine`,
+it can also lead to breaking changes if these are not specifically specified.
+
+The same goeas for packages and dependencies.  
+Package manager like `apt` and `apk` support version pining with `package==<version>`.  
+For `apk` it is also possible to use `~=` to not have to define `patch` or `minor` versions.
+
+Check for available packages here:
+  - [Packages for Linux and Unix](https://pkgs.org/)
+  - [alpine package list](https://pkgs.alpinelinux.org/packages)
+
+Additionally for dependencies like in `python` or `go` should have their version pinned:
+  - [Python pypi](https://pypi.org/)
+  - [Go packages](https://pkg.go.dev/)
+
+Proper version pinning wherever possible adds better reproducability of container images
+and simplifies fixing security issues, by exactly knowing what package versions are used.
 
 
 #### Application profiling
@@ -1382,6 +1426,8 @@ For `kubernetes` the `top` command can be used:
   - `kubectl top pod <POD_NAME> --containers`
   - `kubectl top node <NODE_NAME>`
 
+Lastly, when developing an application that is `multi-processing/-treading` it might happen that dangling processes or threads are not removed properly.  
+For that checkout the [docker_process_count.bash](scripts/docker_process_count.bash) script which can output the total amount of threads and processes for each running container.
 
 #### Security
 There are tools like [trivy](https://github.com/aquasecurity/trivy) and [osv-scanner] (https://github.com/google/osv-scanner) that should be used to check container images for vulnerabilities.
@@ -1391,7 +1437,6 @@ There are tools like [trivy](https://github.com/aquasecurity/trivy) and [osv-sca
 > Just because there was no vulnerability found during the initial check,
 > That doesn't mean that there will not be any vulnerability found in the future.  
 > Vulnerability checks should be done on a regular and continuous basis.
-
 
 #### Sign the container images
 With tools like [cosign](https://github.com/sigstore/cosign) have the possibility to sign contaier images.
@@ -1413,7 +1458,6 @@ chmod +x cosign
 ./cosign verify --key cosign.pub localhost:5000/myfirstimage:3
 ```
 
-
 #### Automate the build process
 Following all best practices can make the developement process tedious, which is why automating the process is highly recommended:
   - For `GitHub` there are a varity of [GitHub Actions](https://docs.github.com/en/actions) available.
@@ -1422,3 +1466,587 @@ Following all best practices can make the developement process tedious, which is
 > [!NOTE]  
 > Checkout this GitLab CI Component:  
 > [Container CI Component](https://jugit.fz-juelich.de/iek-10/public/developer-tools/gitlab-ci-components/container)
+
+
+
+## Compose files
+While using `docker run` is fine for testing and development,
+when it comes to managing multiple containers it gets out of hand quickly and becomes unmanageable.  
+There are many pieces that can go wrong,
+a missing container or network,
+a typo when entering the command,
+incomplete copying from a documented command and so forth.
+
+This is where `Compose files` come in.  
+A `Compose file` is a `YAML` configuration file that describes how to run a set of containers as services.  
+The default filename is `docker-compose.yml`, but can differe if needed.
+
+It can be used to define `services`, `networks`, `volumes`, and more in a declarative way.  
+Like with CLI commands there are short and long versions that can be used in a compose file.  
+To give a better detailed overview the long versions are used in the examples.
+
+> [!NOTE]  
+> For older distributiins like `Ubuntu 22.04` it might be required for `podman` to manually install the compose plugin.
+> Installation instructions can be found [here](https://github.com/containers/podman-compose).  
+> In that case it might use the `podman-compose` command instead of `podman compose`.
+
+A minimal webserver example can look like this:
+```yaml
+# The services section can contain one or more service definitions
+# Each individual service can contain one or more container
+services: 
+  web:  # This is the name of the service, which can be set to anything
+    image: docker.io/nginx:1-alpine # The image used for the container of the service "web"
+    ports:  # A list of ports to be exposed
+      - target: 8080  # Port on the host system
+        published: 80 # Port in the container
+        protocol: tcp # The used protocol
+        mode: ingress
+        # The mode is important for a Docker Swarm setup.
+        # "ingress" mode (default) means the port is exposed on one host and Docker Swarm uses loadbalancing
+        # "host" mode publishes the port on all nodes
+    volumes:  # A list of volume mounts simliar to "docker run"
+      - source: ./data
+        target: /usr/share/nginx/html
+        type: bind
+        read_only: true
+        # For the volume type multiple options exist,
+        # but the most common are "bind" and "volume"
+        # "bind" is for direct mounts of directories and files from the host system into the container
+        # "volume" is for named volumes, they can be setup and declared on the same level as "services"
+    environment:  # "environment" contains a mapping for all env variables to be set in the container
+      SOME_KEY: <some-value>
+    healthcheck:  # A healtcheck can be used to run a continuous test if the container is still functioning
+      test: wget -q --spider http://127.0.0.1:80
+    # In the logging section it is possible to configure how logs from the container should be handeld.
+    # By default it doesn't limit the amount of logs which can completly fill the host disk space.
+    # Therefore limiting logs is always recommended
+    logging:
+      driver: "json-file"
+      options:
+        max-file: "5"
+        max-size: "10m"
+```
+
+By default if in the same directory as the compose file a `.env` variable exists, it will be read automatically.
+The read environment variables can than be set as values for most options in the compose file with `$var-name`.  
+They work similar to `shell variables` and can have defaults defined `${var-name:-default-value}`
+
+Further options can be found in the [Docker Compose Reference](https://docs.docker.com/reference/compose-file/).
+
+Checkout the following examples:
+  - [docker-compose.registry.yml](compose-files/docker-compose.registry.yml)
+  - [docker-compose.sidecar.yml](compose-files/docker-compose.sidecar.yml)
+  - [docker-compose.webapp-and-storage.yml](compose-files/docker-compose.webapp-and-storage.yml)
+
+Starting the services in the compose file can be done with `$CR compose up -d` or:  
+```sh
+$CR compose -f compose-files/docker-compose.registry.yml up -d
+```
+
+Stop them with:
+```sh
+$CR compose -f compose-files/docker-compose.registry.yml up -d
+```
+
+### Networking
+By default, even if no network is explicitly defined,
+a compose deplyoment will create a custom network and adds all services to it that doen't have a network defined.  
+Because of this the DNS name resolution by service name is always available and should be used when communicating between services.
+
+Start the networking example deployment:
+```sh
+# 
+$CR compose -f compose-files/docker-compose.networking.yml up -d
+```
+
+Connect to the container by service name:
+```sh
+$CR container run --rm -it --net=container:$($CR container ls --filter name=webserver-1 --quiet) busybox nslookup webserver-1
+```
+
+Start the networking example deployment:
+```sh
+$CR compose -f compose-files/docker-compose.networking.yml down
+```
+
+> [!IMPORTANT]  
+> The DNS name ina contaienr is always the service name and the hostname of the container.  
+> This can especially lead to issues when running multiple instances of a container using `replicas`.  
+> Therefore it is advised to either use a different hostname from the service name.  
+> Most of the time the hostname isn't needed, so not explicitly setting it is better.  
+> Checkout the [Docker Swarm DNS](#dns) example for more details.
+
+
+### Best practices
+
+#### YAML anchor
+Since `compose files` use the `YAML` syntax it is possible to use `YAML anchor` to reduce repetitive code.
+
+Checkout the [docker-compose.yaml-anchor.yml](compose-files/docker-compose.yaml-anchor.yml) example.  
+For further details check the [YAML reference](https://yaml.org/).
+
+### Update config in parallel
+When deploying multiple replicas of a service use the `update_config` option
+to define how many services are allowed to be updated at the same time:
+```yml
+services:
+  redis:
+    image: valkey/valkey
+    deploy:
+      replicas: 6
+      # placement:
+      #   max_replicas_per_node: 1
+      update_config:
+        parallelism: 2
+        delay: 10s
+      restart_policy:
+        condition: on-failure
+```
+
+### Healthchecks
+Use healthchecks whenever possible to ensure that deployments are properly functional.
+
+Get the Healthcheck logs:
+```sh
+$CR inspect $($CR container ls --filter name=webserver --quiet) --format "{{json .State.Health }}" |
+grep -Eo '"[^"]*" *(: *([0-9]*|"[^"]*")[^{}\["]*|,)?|[^"\]\[\}\{]*|\{|\},?|\[|\],?|[0-9 ]*,?' |
+awk '{if ($0 ~ /^[}\]]/ ) offset-=4; printf "%*c%s\n", offset, " ", $0; if ($0 ~ /^[{\[]/) offset+=4}'
+```
+
+### Limit logging
+In the logging section of a service it is possible to configure how logs from the container should be handeld.  
+By default it doesn't limit the amount of logs which can completly fill the host disk space.  
+Therefore limiting logs is always recommended:
+```yaml
+    logging:
+      driver: "json-file"
+      options:
+        max-file: "5"
+        max-size: "10m"
+```
+
+### Limit capabilities
+Capabilities are distinct units of privilege in the kernel.  
+They are things like the ability to send raw IP packets, or bind to ports below 1024.
+Most capabilities are required to manipulate the kernel/system, and these are used by the container runtime, but seldom used by the processes running inside the container.
+
+Therefore to increase security it is recommended to enable as few capabilities as needed when running a container.
+
+Get default Capabilites:
+```sh
+$CR run --rm fedora capsh --print
+# $CR  run --network=host --rm alpine sh -c 'apk add -U libcap; capsh --print'
+```
+
+Drop all capabilities with `--cap-drop=ALL`:
+```sh
+$CR run --rm --cap-drop=ALL fedora capsh --print
+```
+
+Only add necessary capabilities:
+```sh
+$CR run --rm --cap-drop=ALL --cap-add=setuid --cap-add=setgid fedora capsh --print
+```
+
+For compose files use:
+```yml
+services:
+  webserver:
+    image: docker.io/nginx:1-alpine
+    cap_add:
+      - ...
+    cap_drop:
+      - ...
+```
+
+More information about capabilites can be found here:
+  - [Linux capabilities man page](https://man7.org/linux/man-pages/man7/capabilities.7.html)
+  - [Docker runtime privilege and linux capabilities](https://docs.docker.com/engine/containers/run/#runtime-privilege-and-linux-capabilities)
+  - [Docker compsoe capabilites reference](https://docs.docker.com/reference/compose-file/services/#cap_add)
+
+### Set resource limits
+By default, containers can use as much CPU and memory as the host allows. This can lead to:
+  - One misbehaving container consuming all RAM and causing the host to swap/crash.
+  - One container monopolizing CPU and starving others.
+  - Scaling of a service leading to resource exhaustion on the host
+
+The limits can be defined like this:
+```yaml
+services:
+  webserver:
+    image: docker.io/nginx:1-alpine
+    deploy:
+      resources:
+        reservations: # Soft guarantee of the ressources if available
+          cpus: '0.25'  # Percent of a Core
+          memory: 20M
+        limits: # Hard limit of ressources that can be used, exceeding it can lead to the service being killed
+          cpus: '0.50'
+          memory: 50M
+```
+Often it is not easy to properly determine how many ressources an applicaiton needs to properly run.  
+For applications with a predefined load this can be done easily,
+but for applications like web services the load can differ vastly making it more difficult.  
+Since exceeding the ressource limits lead to the service being killed, this option should be used carefully.
+
+
+## Orchestration: Docker Swarm & Kubernetes
+Running containers with `docker run` or `compose files` is fine for local development, but production environments need:
+- Scalability - automatically running more replicas when demand grows.
+- Fault tolerance - restarting containers on failure, redistributing workloads if a node goes down.
+- Service discovery & networking - assigning DNS names and load balancing between replicas.
+- Configuration & secrets management - distributing environment variables, certificates, and keys.
+- Rolling updates & rollbacks – upgrading without downtime.
+
+This is where orchestration platforms come in.
+
+### Docker Swarm
+Docker Swarm is Docker’s built-in orchestrator. It’s simpler than Kubernetes and good for small to medium clusters.
+  - Cluster setup: A Swarm is initialized with `docker swarm init`, then other nodes join as managers or workers.
+  - Deployment: Applications are deployed with `docker stack deploy -c docker-compose.yml myapp`.
+  - Scaling: Each service can be scaled dynamically (`docker service scale myservice=5`), but these changes don't persist if a stack iss stopped and restarted.
+  - Networking: Uses overlay networks that span all nodes; services are reachable by DNS names.
+  - State management: `Swarm managers` maintain desired state, automatically reconciling failed tasks.
+  - Replicas of a `service` are called `tasks`
+
+Limitations:
+  - Development of Swarm has slowed significantly.
+    - Many bugs have accumulated over the years.
+    - some `compose` features are not available or are broken in Swarm.
+  - Lacks advanced features like namespaces, CRDs, or mature ecosystem integration.
+  - Best for small/simple setups or training, but not the industry standard today.
+
+With `docker stack ps <stack-name>` it is possible to check the state of a stack.  
+This also shows `tasks` that failed previously, which can get lengthy for some deployments.  
+To only see the running `tasks`:
+```sh
+docker stack ps <stack-name> --format "table {{.ID}}\t{{.Name}}\t{{.CurrentState}}\t{{.Node}}" --filter "desired-state=running"
+```
+
+> [!Important]  
+> Docker Swarm doesn't automatically read `.env` files, a workaround is to load that file beforehand so that it gets passed into the deployment:  
+> `export $(grep -v '^#' .env | xargs) > /dev/null 2>&1; docker stack deploy <stack-name> && unset $(grep -v '^#' .env | sed -E 's/(.*)=.*/\1/' | xargs)`
+
+
+
+#### Logging
+There are two main options when checking logs of a container:
+  - `docker service logs <service-name>`
+  - `docker logs <task-name>`
+
+The `service` logs combine the logs of all the underlying `tasks`.  
+Important to note is that the service logs can be quite difficcult to read, becasue they are just lumped together how they are received and not ordered.
+
+Reading the logs on one node can often be easier to do:
+`docker logs $(docker container ls --filter status=running --filter name=<task-name> --quiet) -n 50 2>&1 | grep -i "error"`
+
+
+#### Docker Swarm data persistence
+When considering data persistence in Docker Swarm it is important to node that `mounts` and `named volumes`
+are only done on one specific node.  
+While `named volumes` are created automatically in case of a `failover`, the data is not transfered.  
+THis can lead to inconsitent data and other issues and should be considered carefully.
+
+To replicate small things like configuration or password files the `config` and `secret` optionms can be used.  
+But both of them can not be changed as long as the stack is running,
+which makes them not a good solution for e.g. certificates that rotate regularly.
+
+As a workaround trick for general files, it is possible to add a `service` that is deployed in `global` mode (on all nodes),
+and than creates files to a `named volume` where that volume is also attached to the actual service.  
+This concept is an `init container`.
+
+A better option is to use network storage like `NFS` or `S3` or cluster-aware storage like `GlusterFS`.
+
+For clustered services (recommended for `databases`) it would be recommended to deploy them on all nodes and make them store their data on each node.
+
+> [!NOTE]  
+> The volume type `cluster` was added in the [Docker Engine API v1.42](https://docs.docker.com/reference/api/engine/version-history/#v142-api-changes)
+> and is listed as option in the [Compose Reference](https://docs.docker.com/reference/compose-file/services/#long-syntax-6),
+> but so far is barely explained and poorly documented.
+
+
+#### Docker Swarm Networking
+In Swarm mode networks are usualy of the `overlay` type making them availavble on all nodes.  
+Important to note that manually attaching a container to a network is not possible by default.  
+To make this possible the option `--attachable` has to be added.
+
+##### Overlay vs Bridge network
+In an `overlay` network the Docker DNS behaves differently compared to `bridge` networks.  
+One difference that might not seem like much is that the `service name` is treated differently and
+gets an `IP` that uses `round-robin` to connect to the individual underlying services.
+
+Build the `dns-utils` container and test it:
+```sh
+docker build -t dns-utils -f ./dockerfiles/Dockerfile.dns-utils .
+docker run --rm busybox ping google.de
+docker run --rm dns-utils dig google.de
+docker run --rm busybox nslookup google.de
+```
+
+Deploy the Swarm `stack`:
+```sh
+docker stack deploy -c compose-files/docker-compose.networking-swarm.yml net-test
+```
+
+The service `webserver-1` consists of 3 replicas where each has `webhost` set as hostname.  
+When resolving the DNS entries to IPs the result is:
+  - `webserver-1` has one entry
+  - `tasks.webserver-1`has three entries
+  - `webhost` has three entries
+```sh
+docker container run --rm -it --net=$(docker network ls --filter name=web-net --quiet) dns-utils nslookup webserver-1
+docker container run --rm -it --net=$(docker network ls --filter name=web-net --quiet) dns-utils dig webserver-1
+docker container run --rm -it --net=$(docker network ls --filter name=web-net --quiet) dns-utils ping webserver-1
+
+docker container run --rm -it --net=$(docker network ls --filter name=web-net --quiet) dns-utils nslookup webhost
+docker container run --rm -it --net=$(docker network ls --filter name=web-net --quiet) dns-utils dig webhost
+docker container run --rm -it --net=$(docker network ls --filter name=web-net --quiet) dns-utils ping webhost
+```
+
+The service `webserver-2` is similar to `webserver-1` except the `tasks` don't have an explicit hostname defined.  
+The results are the same as before:
+```sh
+docker container run --rm -it --net=$(docker network ls --filter name=web-net --quiet) dns-utils nslookup webserver-2
+docker container run --rm -it --net=$(docker network ls --filter name=web-net --quiet) dns-utils dig webserver-2
+```
+
+For `webserver-3` the `tasks` have the same hostname defined as the service name, which results in:
+  - `webserver-3` has 4 entries!!! The `service name` + 3x the tasks
+  - `tasks.webserver-3` contains the `three tasks`
+```sh
+docker container run --rm -it --net=$(docker network ls --filter name=web-net --quiet) dns-utils nslookup webserver-3
+docker container run --rm -it --net=$(docker network ls --filter name=web-net --quiet) dns-utils dig webserver-3
+```
+
+Remove the `stack`:
+```sh
+docker stack rm net-test
+```
+
+> [!IMPORTANT]  
+> Do `not` set the hostname for `tasks` to be the same as any `service name` or any hostname in other services.  
+> The Docker DNS will always do `round-robin` and when `service` and `task` IPs are grouped together like in `webserver-3`,
+> it is not predictable how connections are forwarded.  
+> While technically, most of the time, this is not an issue, it at least makes network communication worse to trace.
+
+
+
+### Kubernetes
+Kubernetes (k8s) is the de facto industry standard for orchestration.
+  - Originated at Google as Borg, later open-sourced.
+  - Highly extensible and powerful, but more complex than Swarm.
+  - [6 month livecycle](https://endoflife.date/kubernetes) for a kubernetes distribution
+  - Supports:
+    - Declarative YAML manifests
+    - Self-healing workloads
+    - Advanced networking, storage, and scaling
+    - Operator for autoamated deployment and livecycle manager
+    - Huge ecosystem ([CNCF landscape](https://landscape.cncf.io/))
+      - [HELM](https://helm.sh/) to manage Kubernetes applications
+      - [ArtifactHUB](https://artifacthub.io/) as central marektplace for `HELM` templates
+      - [OperatorHub](https://operatorhub.io/) as central marketplace for operator
+
+Lightweight variants:
+  - [rke2](https://github.com/rancher/rke2) – Hardened single binary Kubernetes distribution from Rancher.
+  - [k3s](https://github.com/k3s-io/k3s) – Minimal single binary Kubernetes, great for edge, IoT, CI and developement.
+  - [k3d](https://github.com/k3d-io/k3d) – Run k3s inside Docker, great for dev/test.
+
+
+#### Running with Podman
+While limited it is possible to run Kuberentes files and Helm charts with podman:
+
+Create a kuebrentes file form Helm template:
+```sh
+helm template webserver ./helm-files > ./data/webserver-k8s.yaml
+```
+
+Run the deployment:
+```sh
+podman kube play --replace data/webserver-k8s.yaml
+```
+
+Check state:
+```sh
+podman pod ps
+podman ps
+```
+
+Stop the deployment:
+```sh
+podman kube play --down data/webserver-k8s.yaml
+```
+
+> [!NOTE]  
+> Older Podman Version (like 3.4.4) use different commands:
+>   - `podman play kube data/webserver-k8s.yaml`
+>   - `podman pod stop webserver-pod-0`
+>   - `podman pod rm webserver-pod-0`
+
+
+## General Best practices
+
+#### File descriptor limits
+Many Linux distributions limit open files per process to `1024`.  
+Orchestrators handling many sockets (reverse proxies, monitoring, MQTT brokers) easily exceed this.  
+Raising the limit is often a requriement, otherwise the operation can be compromised with some cntainer not properly functioning.
+
+Check the current limit:
+```sh
+ulimit -n
+```
+
+Temporarily increase the limit (resets after reboot):
+```sh
+ulimit -n 1000000
+```
+
+Permanently increase the limit (requires reboot):
+```sh
+sudo bash -c " echo '* hard nofile 1000000' >> /etc/security/limits.conf"
+sudo bash -c " echo '* soft nofile 1000000' >> /etc/security/limits.conf"
+```
+
+#### DNS responses for outgoing connections
+For outgoing connections when using `DNS names` repeated DNS querries are done,
+because the responses usually are not stored properly.  
+This can flood `DNS servers` which should be avoided.
+
+here is an example for `Docker` to use the hosts `systemd-resolved`:
+  - Get the `docker0` network ip: `ip a s` (default: `172.17.0.1`)
+  - Create the following configuration in`/etc/systemd/resolved.conf` (owner `root`, file permission `644`):
+    ```ini
+    [Resolve]
+      # Some examples of DNS servers which may be used for DNS= and FallbackDNS=:
+      # Cloudflare: 1.1.1.1#cloudflare-dns.com 1.0.0.1#cloudflare-dns.com 2606:4700:4700::1111#cloudflare-dns.com 2606:4700:4700::1001#cloudflare-dns.com
+      # Google:     8.8.8.8#dns.google 8.8.4.4#dns.google 2001:4860:4860::8888#dns.google 2001:4860:4860::8844#dns.google
+      # Quad9:      9.9.9.9#dns.quad9.net 149.112.112.112#dns.quad9.net 2620:fe::fe#dns.quad9.net 2620:fe::9#dns.quad9.net
+      #DNS=
+      #FallbackDNS=
+      #Domains=
+      #DNSSEC=no
+      #DNSOverTLS=no
+      #MulticastDNS=no
+      #LLMNR=no
+      #Cache=no-negative
+      Cache=yes
+      #CacheFromLocalhost=no
+      #DNSStubListener=yes
+      #DNSStubListenerExtra=
+      DNSStubListenerExtra=<docker0-IP>
+      #ReadEtcHosts=yes
+      #ResolveUnicastSingleLabel=no
+      #StaleRetentionSec=0
+    ```
+  - Restart the `systemd-resolved` service:
+    ```sh
+    sudo systemctl restart systemd-resolved.service
+    ```
+
+
+
+## Misc
+Some additional noteworthy things:
+  - [The Twelve-Factor Manifesto](https://github.com/twelve-factor/twelve-factor) - examples and guidelines for shedding outdated concepts and focusing on core application design for cloud deployment
+  - [sysbox](https://github.com/nestybox/sysbox) empowers rootless containers to run workloads such as Systemd, Docker, Kubernetes, just like VMs.
+
+
+### Docker placeholder templates
+In docker there are some so callled `placeholder templates` available.  
+Checkout [docker-compose.placeholder-templates.yml](compose-files/docker-compose.placeholder-templates.yml) for eaxamples.
+
+
+### Get DockerHub pull rate limit
+This is how to retreive the poull rate limit for DockerHub (requires curl, grep and optionally jq):
+
+Get a token without authentication:
+```sh
+# Without jq:
+TOKEN=$(curl -s "https://auth.docker.io/token?service=registry.docker.io&scope=repository:ratelimitpreview/test:pull" | awk -F'"' '/token/ {print $4}')
+```
+```sh
+# With jq:
+TOKEN=$(curl -s "https://auth.docker.io/token?service=registry.docker.io&scope=repository:ratelimitpreview/test:pull" | jq -r .token)
+```
+```sh
+# With wget:
+TOKEN=$(wget -qO- "https://auth.docker.io/token?service=registry.docker.io&scope=repository:ratelimitpreview/test:pull" | awk -F'"' '/token/ {print $4}')
+```
+
+Get token with authentication:
+```sh
+# Without jq:
+TOKEN=$(curl -s --user 'username:password' "https://auth.docker.io/token?service=registry.docker.io&scope=repository:ratelimitpreview/test:pull" | awk -F'"' '/token/ {print $4}')
+```
+```sh
+# With jq:
+TOKEN=$(curl -s --user 'username:password' "https://auth.docker.io/token?service=registry.docker.io&scope=repository:ratelimitpreview/test:pull" | jq -r .token)
+```
+```sh
+# With wget:
+TOKEN=$(curl -s --user 'username:password' "https://auth.docker.io/token?service=registry.docker.io&scope=repository:ratelimitpreview/test:pull" | awk -F'"' '/token/ {print $4}')
+```
+
+Get rate limit:
+```sh
+curl -s --head -H "Authorization: Bearer $TOKEN" https://registry-1.docker.io/v2/ratelimitpreview/test/manifests/latest
+```
+```sh
+# With wget:
+wget --server-response --spider --header="Authorization: Bearer $TOKEN" https://registry-1.docker.io/v2/ratelimitpreview/test/manifests/latest
+```
+
+
+### Running a container with runc
+Since `runc` is used to actually run container, it is possible to use it directly without any higher-level container runtime:
+  - switch into the `runc_container` directory
+  - Make `hello.c` a static executable binary (requires the `gcc` and `musl-dev` packages): `gcc -o ./rootfs/helloworld -static-libgcc -static hello.c`
+  - Create specification file for a rootless container (or use existing):
+    - `runc spec --rootless`
+    - Set `.process.terminal: false` and `.process.args["./helloworld"]`
+  - Create a container: `runc create helloworld-container`
+  - Run the container (afterwards press Enter): `runc start helloworld-container`
+  - Remove the container: `runc delete helloworld-container`
+
+While this container only contains a single binary, it is absolutely possible to add a full Linux distribution by adding its root filesystem into the `rootfs` directory.  
+For example the [Alpine Linux mini root filesystem](https://alpinelinux.org/downloads/).
+
+### Change Docker/Pdoman container runtime
+It is possible to change the container runtime used in `Docker` and `Podman`.
+
+Here is an example to use [crun](https://github.com/containers/crun/):
+  - A simple way of installing `crun` is by using just the binary from the [release page](https://github.com/containers/crun/releases)
+  - Add it to `/usr/bin/crun` or `/usr/local/bin/crun`
+  - Use it in `Docker`:
+    - Adjust `/etc/docker/daemon.json`:
+      ```json
+      {
+        "default-runtime": "runc",
+        "runtimes": {
+          "crun": {
+            "path": "/usr/bin/crun"
+          }
+        }
+      }
+      ```
+    - Check:
+      ```sh
+      docker info | grep -A3 Runtimes
+      ```
+    - Use it:
+      ```sh
+      docker run --runtime=crun --rm alpine echo it works
+      ```
+  - Use it in `Podman`:
+    ```sh
+    podman run --runtime=crun --rm --memory 512k alpine echo it works
+    podman run --runtime=runc --rm --memory 3M alpine echo it works
+    ```
+    ```sh
+    podman run --runtime /usr/bin/crun --rm --memory 512k alpine echo it works
+    podman run --runtime /usr/bin/runc --rm --memory 3M alpine echo it works
+    ```
+
+details can be found here:
+  - [Docker Engine alternative container runtimes](https://docs.docker.com/engine/daemon/alternative-runtimes/)
+  - [Docker Compose runtime specification](https://docs.docker.com/reference/compose-file/services/#runtime)

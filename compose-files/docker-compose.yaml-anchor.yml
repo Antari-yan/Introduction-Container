@@ -1,0 +1,32 @@
+# Limiting of logging
+x-logging: &logging
+  driver: "json-file"
+  options:
+    max-file: "5"
+    max-size: "10m"
+
+# Restart policy for any condition
+x-restart_policy: &restart_policy
+  condition: any
+  delay: 5s
+  max_attempts: 3
+  window: 120s
+
+
+services:
+  webserver:
+    image: nginx:1-alpine
+    deploy:
+      replicas: 1
+      restart_policy:
+        <<: *restart_policy
+        condition: on-failure
+    ports:
+      - target: 8080
+        published: 80
+        protocol: tcp
+        mode: ingress
+    healthcheck:
+      test: |
+        wget -q --spider 127.0.0.1:80
+    logging: *logging

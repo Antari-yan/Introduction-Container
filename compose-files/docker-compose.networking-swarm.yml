@@ -1,0 +1,29 @@
+services:
+  webserver-1:
+    image: docker.io/nginx:1-alpine
+    hostname: webhost
+    deploy:
+      replicas: 3
+    networks:
+      web-net:
+
+  webserver-2:
+    image: docker.io/nginx:1-alpine
+    # No hostname
+    deploy:
+      replicas: 3
+    networks:
+      web-net:
+
+  webserver-3:
+    image: docker.io/nginx:1-alpine
+    hostname: webserver-3  # ⚠️ same as service name
+    deploy:
+      replicas: 3
+    networks:
+      web-net:
+
+networks:
+  web-net:
+    driver: overlay
+    attachable: true

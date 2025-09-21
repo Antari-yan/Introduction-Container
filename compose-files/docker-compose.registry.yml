@@ -1,0 +1,80 @@
+# Limiting of logging
+x-logging: &logging
+  driver: "json-file"
+  options:
+    max-file: "5"
+    max-size: "10m"
+
+services:
+  registry:
+    image: registry:3
+    #deploy:
+    #  replicas: 1
+    #  restart_policy:
+    #    condition: any
+    #    delay: 5s
+    #    window: 120s
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    ports:
+      - target: 5000
+        published: 5000
+        protocol: tcp
+        mode: ingress
+    volumes:
+      - source: ${LOCAL_REGISTRY_CERT_PATH:-./data/registry/certs}
+        target: /certs
+        type: bind
+        read_only: true
+      - source: ${LOCAL_REGISTRY_AUTH_PATH:-./data/registry/auth}
+        target: /auth
+        type: bind
+        read_only: true
+
+      # # Enable for persistence:
+      # - source: ${LOCAL_REGISTRY_DATA_PATH:-./data/registry/data}
+      #   target: /var/lib/registry
+      #   type: bind
+      #   read_only: true
+    environment:
+      REGISTRY_HTTP_TLS_CERTIFICATE: /certs/server.pem
+      REGISTRY_HTTP_TLS_KEY: /certs/server.key
+      REGISTRY_AUTH: htpasswd
+      REGISTRY_AUTH_HTPASSWD_REALM: Registry Realm
+      REGISTRY_AUTH_HTPASSWD_PATH: /auth/htpasswd
+
+      # Files on Host vie .env
+      LOCAL_REGISTRY_CERT_PATH: "${LOCAL_REGISTRY_CERT_PATH}"
+      LOCAL_REGISTRY_AUTH_PATH: "${LOCAL_REGISTRY_AUTH_PATH}"
+      LOCAL_REGISTRY_DATA_PATH: "${LOCAL_REGISTRY_DATA_PATH}"
+    healthcheck:
+      test: wget -q --spider --no-check-certificate https://127.0.0.1:5000
+    logging: *logging
+
+# Checkout the "Example for a simple local Container Registry" section for how to create self-signed certificates and the htpasswd file
+
+# # Start the registry:
+# $CR compose -f compose-files/docker-compose.registry.yml up -d
+
+# # Log in to the registry:
+# $CR login localhost:5000
+# # User: testuser
+# # Pass: testpassword
+
+# # Pull an image:
+# $CR image pull alpine:3
+
+# # Tag existing image to point to the local registry:
+# $CR image tag alpine:3 localhost:5000/myfirstimage:3
+
+# # Upload (push) the image:
+# $CR image push localhost:5000/myfirstimage:3
+
+# # Download (pull) the images:
+# $CR image pull localhost:5000/myfirstimage:3
+
+# # Stop the Registry:
+# $CR logout localhost:5000
+# $CR compose -f docker-compose.registry.yml down

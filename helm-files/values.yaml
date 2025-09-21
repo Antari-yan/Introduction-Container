@@ -1,0 +1,9 @@
+replicaCount: 1
+image:
+  repository: docker.io/nginx
+  tag: 1-alpine
+  pullPolicy: IfNotPresent
+service:
+  name: webserver
+  port: 80
+  hostPort: 8080

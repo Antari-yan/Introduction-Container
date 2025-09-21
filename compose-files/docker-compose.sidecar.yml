@@ -1,0 +1,92 @@
+
+# Example to link two container together
+
+services:
+# With Link:
+  nginx1:
+    image: nginx:alpine
+    ports:
+      - name: web
+        host_ip: 127.0.0.1
+        published: 8080
+        target: 80
+        protocol: tcp
+        app_protocol: http
+        mode: host
+      - name: web-secured
+        host_ip: 127.0.0.1
+        published: 8443
+        target: 443
+        protocol: tcp
+        app_protocol: https
+        mode: host
+
+  socat:
+    image: alpine/socat
+    depends_on:
+      - nginx1
+    links:
+      - nginx1
+    ports:
+      - name: web
+        host_ip: 127.0.0.1
+        published: 8081
+        target: 8081
+        protocol: tcp
+        app_protocol: http
+        mode: host
+    command: "TCP4-LISTEN:8081,fork,reuseaddr TCP:nginx1:80"
+    logging:
+      driver: journald
+
+# Or as docker run:
+# docker run -d --rm --name nginx1 --publish 8080:80 --publish 8082:8082 nginx:alpine
+# docker run -d --rm --name socat1 --publish 8081:8081 --link nginx alpine/socat tcp-listen:8081,fork,reuseaddr tcp-connect:nginx1:80
+
+# docker container stop $(docker container ls --filter name=nginx1 --quiet)
+# docker container stop $(docker container ls --filter name=socat1 --quiet)
+
+# Test
+# curl http://127.0.0.1:8080
+# curl http://127.0.0.1:8081
+
+
+# With sidecar (direct connection):
+  nginx2:
+    image: nginx:alpine
+    ports:
+      - name: web
+        host_ip: 127.0.0.1
+        published: 8082
+        target: 80
+        protocol: tcp
+        app_protocol: http
+        mode: host
+      - name: web
+        host_ip: 127.0.0.1
+        published: 8083
+        target: 8083
+        protocol: tcp
+        app_protocol: http
+        mode: host
+
+  socat2:
+    image: alpine/socat
+    depends_on:
+      - nginx2
+    network_mode: "service:nginx2"
+    command: "TCP4-LISTEN:8083,fork,reuseaddr TCP:0.0.0.0:80"
+    logging:
+      driver: journald
+
+
+# Or as docker run:
+# docker run -d --rm --name nginx2 --publish 8080:80 --publish 8082:8082 nginx:alpine
+# docker run -d --rm --name socat2 --network container:nginx2 alpine/socat tcp-listen:8082,fork,reuseaddr tcp-connect:0.0.0.0:80
+
+# docker container stop $(docker container ls --filter name=nginx2 --quiet)
+# docker container stop $(docker container ls --filter name=socat2 --quiet)
+
+# Test
+# curl http://127.0.0.1:8082
+# curl http://127.0.0.1:8083

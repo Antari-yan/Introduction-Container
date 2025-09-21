@@ -1,0 +1,44 @@
+# Limiting of logging
+x-logging: &logging
+  driver: "json-file"
+  options:
+    max-file: "5"
+    max-size: "10m"
+
+services:
+  web:
+    image: simple_python_web_app
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    ports:
+      - target: 8080
+        published: 8080
+        protocol: tcp
+        mode: ingress
+    environment:
+      FLASK_DEBUG: "true"
+    healthcheck:
+      test: wget -q --spider http://127.0.0.1:8080
+    logging: *logging
+
+  valkey:
+    image: valkey/valkey:8-alpine
+    cap_drop:
+      - ALL
+    cap_add:
+      - SETGID
+      - SETUID
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: valkey-cli -h 127.0.0.1 -p 6379 ping
+    logging: *logging
+
+
+# # This is a small example in how to create a containerized Python application based on `flask` as micro web framework and `valkey` as in-memory storage.
+# docker build -t simple_python_web_app -f webapp-and-storage/Dockerfile ./webapp-and-storage
+# docker compose -f docker-compose.webapp-and-storage.yml up -d
+# curl http://localhost:8080
+# docker compose -f docker-compose.webapp-and-storage.yml down
