@@ -1780,6 +1780,10 @@ For clustered services (recommended for `databases`) it would be recommended to 
 > and is listed as option in the [Compose Reference](https://docs.docker.com/reference/compose-file/services/#long-syntax-6),
 > but so far is barely explained and poorly documented.
 
+> [!NOTE]  
+> `NFS` only supports authentication from versions `4` onwards.  
+> For older versions IP whitelisting and firewall rules are the only option.
+
 
 #### Docker Swarm Networking
 In Swarm mode networks are usualy of the `overlay` type making them availavble on all nodes.  
@@ -1850,7 +1854,7 @@ docker stack rm net-test
 ### Kubernetes
 Kubernetes (k8s) is the de facto industry standard for orchestration.
   - Originated at Google as Borg, later open-sourced.
-  - Highly extensible and powerful, but more complex than Swarm.
+  - Highly extensible, modular and powerful, but more complex than Swarm.
   - [6 month livecycle](https://endoflife.date/kubernetes) for a kubernetes distribution
   - Supports:
     - Declarative YAML manifests
@@ -1862,10 +1866,19 @@ Kubernetes (k8s) is the de facto industry standard for orchestration.
       - [ArtifactHUB](https://artifacthub.io/) as central marektplace for `HELM` templates
       - [OperatorHub](https://operatorhub.io/) as central marketplace for operator
 
-Lightweight variants:
+Lightweight distributions variants:
   - [rke2](https://github.com/rancher/rke2) – Hardened single binary Kubernetes distribution from Rancher.
   - [k3s](https://github.com/k3s-io/k3s) – Minimal single binary Kubernetes, great for edge, IoT, CI and developement.
   - [k3d](https://github.com/k3d-io/k3d) – Run k3s inside Docker, great for dev/test.
+
+
+The modularity and extensiblity of Kubernetes adds a high level of komplexity to maintenace and developement.  
+With a 6 month livecycle it would be foolish to do things manually.  
+There are many tools like the [System Upgrade Controller](https://github.com/rancher/system-upgrade-controller)
+that help automatizing things, but they also add complexity and need to be maintained.
+
+The lightweight k8s distibutions take a way a lot of complexity,
+but it still requires a lot of preparation work to get a well functioning system with minimal maintenance overhead.
 
 
 #### Running with Podman
