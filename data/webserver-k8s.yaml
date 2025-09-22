@@ -1,0 +1,24 @@
+---
+# Source: webserver/templates/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: webserver
+  labels:
+    app: webserver
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: webserver
+  template:
+    metadata:
+      labels:
+        app: webserver
+    spec:
+      containers:
+        - name: nginx
+          image: "docker.io/nginx:1-alpine"
+          ports:
+            - containerPort: 80
+              hostPort: 8080

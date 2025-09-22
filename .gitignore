@@ -1,5 +1,6 @@
 data/**/*
 !data/index.html
+!data/webserver-k8s.yaml
 
 runc_container/**/*
 !runc_container/hello.c

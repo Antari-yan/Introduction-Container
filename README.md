@@ -47,10 +47,15 @@ Running many VMs wastes system resources and complicate scaling.
   - While scaling is possible, setting up a whole VM usually takes at least a couple of minutes.
 - Containers:
   - Share the host operating system kernel but isolate processes, filesystems, and networking.
+    - The main reason why sharing the kernel can be shared, is because of it's highly stable APIs with good backwards compatibility
   - They are lightweight, often just a few megabytes or less.
   - Containers can start in seconds or less, because the host kernel is already available.
-  - Simple at scaling up and down
+  - Simple at scaling up and down.
   - Can run basically anywhere - on a laptop, a server, the cloud or on a RaspberryPi.
+  - Container don't have `systemd` (the Linux system and service manager)
+    - Because often the privileges are missing
+    - `systemd` expects full control of `PID 1` and `cgroups`, but containers use `PID 1` by default
+    - This makes it non-trivial to run `systemd` inside of a container
 
 ### Background
 #### Docker
@@ -73,7 +78,7 @@ Running many VMs wastes system resources and complicate scaling.
 - By 2017–2018, `Kubernetes` was more widely used, and `Docker Swarm` fell into minimal maintenance mode, but it is still available.
 - Because of the minimal maintenance there are many bugs and missing configuration options that are otherwise available for a Standalone Docker. (e.g., `depends_on`, `deploy.mode: replicated-job`, ...)
 
-#### Kubernetes
+#### Kubernetes (k8s)
 - At `Google`, developers needed to manage containers at massive scale.
 - Google built an internal system called `Borg` in the early 2000s to run millions of containers across thousands of machines.
 - In 2014, Google released `Kubernetes` (inspired by Borg) as an open-source orchestration system.
@@ -82,7 +87,7 @@ Running many VMs wastes system resources and complicate scaling.
   - Backing by the [Cloud Native Computing Foundation (CNCF)](https://www.cncf.io/).
   - Strong community support
 - Kubernetes effectively replaced Docker Swarm in most serious production environments.
-- The smallest managable unit in Kubernetes is a `pod`, which is a group of one or more container (checkout [Sharing namespaces between Containers](#sharing-namespaces-between-containers) for how `pods` basically work)
+- The smallest manageable unit in Kubernetes is a `pod`, which is a group of one or more container (checkout [Sharing namespaces between Containers](#sharing-namespaces-between-containers) for how `pods` basically work)
 
 #### The Open Container Initiative (OCI)
 - In 2015, with multiple runtimes and image formats emerging, the industry needed standardization.
@@ -97,11 +102,14 @@ Running many VMs wastes system resources and complicate scaling.
 - Developed by `Red Hat` as an open-source daemonless and rootless alternative to Docker.
 - Unlike Docker, Podman doesn’t require a background service (`dockerd`) and can run entirely without root privileges, improving security.
 - Podman intentionally mimics Docker’s CLI, so commands like `podman run` are nearly identical to `docker run`.
-- It’s popular in enterprise and security-sensitive contexts and integrates tightly with `systemd` (the Linux system and service manager).
-- Also muses the concept of `pods` like Kubernetes
+- It’s popular in enterprise and security-sensitive contexts and integrates tightly with `systemd`.
+- Also uses the concept of `pods` like Kubernetes
 
 #### Linux Namespaces
-Linux namespaces provide isolation for system resources, meaning a process or a group of processes can operate in its own „namespace,“ unaware of other processes using the same resources in different namespaces. Namespaces isolate processes, allowing them to have their own view of system resources like process IDs (PIDs), file systems, network interfaces, user IDs, and more.
+Linux namespaces provide isolation for system resources,
+meaning a process or a group of processes can operate in its own `namespace`,
+unaware of other processes using the same resources in different namespaces.  
+Namespaces isolate processes, allowing them to have their own view of system resources like process IDs (PIDs), file systems, network interfaces, user IDs, and more.
 
 Each type of namespace provides isolation for a specific system resource:
   - PID namespace: Isolates the process IDs, meaning processes in one namespace can't see or affect processes in another namespace.
@@ -319,6 +327,16 @@ $CR container stop alpine-container
 # Alternatively list running container, filter by name and only return the ID:
 # $CR container stop $($CR container ls --filter name=alpine-container --quiet)
 ```
+
+
+Retrieve container logs:
+```sh
+$CR container logs <container-name>
+```
+By default all output to `stdout/stderr` in the container is captured by the containr runtime as logs.  
+They are stored together with the container data by default as `json-file` (Docker) and `k8s-file` (Podman, `json-file` aliased to it).  
+But there are also other logging driver like `systemd`/`journald` and more.
+
 
 ### Advanced Commands
 Format the output of list of running Containers:
@@ -681,15 +699,15 @@ docker container run --rm -d --name webserver -p 8080:80 -p 8443:443 docker.io/n
 
 Retrieve the private IP address of the webserver:
 ```sh
-WEB_SERVER_IP=$($CR inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' $($CR container ls --filter name=webserver --quiet))
+WEBSERVER_IP=$($CR inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' $($CR container ls --filter name=webserver --quiet))
 ```
 
 Access the webserver start page from a new container:
 ```sh
-podman container run -it --rm --network podman busybox wget -qO- http://${WEB_SERVER_IP}
+podman container run -it --rm --network podman busybox wget -qO- http://${WEBSERVER_IP}
 ```
 ```sh
-docker container run -it --rm busybox wget -qO- http://${WEB_SERVER_IP}
+docker container run -it --rm busybox wget -qO- http://${WEBSERVER_IP}
 ```
 
 > [!IMPORTANT]  
@@ -708,14 +726,14 @@ For example:
 ```sh
 $CR network create mynet
 $CR container run --rm -d --name webserver --network mynet docker.io/nginx:1-alpine
-WEB_SERVER_IP=$($CR inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' $($CR container ls --filter name=webserver --quiet))
+WEBSERVER_IP=$($CR inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' $($CR container ls --filter name=webserver --quiet))
 ```
 
 ```sh
-podman run --rm --cap-add=NET_RAW busybox ping ${WEB_SERVER_IP}
+podman run --rm --cap-add=NET_RAW busybox ping ${WEBSERVER_IP}
 # this should fail, abort with ctrl+c
 
-podman run --rm --cap-add=NET_RAW --network mynet busybox ping ${WEB_SERVER_IP}
+podman run --rm --cap-add=NET_RAW --network mynet busybox ping ${WEBSERVER_IP}
 podman run --rm --cap-add=NET_RAW --network mynet busybox ping webserver
 # this should succeed
 
@@ -723,10 +741,10 @@ podman run --rm --cap-add=NET_RAW --network mynet busybox ping webserver
 # which normally requires either root privileges or the Linux capability CAP_NET_RAW
 ```
 ```sh
-docker run --rm busybox ping ${WEB_SERVER_IP}
+docker run --rm busybox ping ${WEBSERVER_IP}
 # this should fail, abort with ctrl+c
 
-docker run --rm --network mynet busybox ping ${WEB_SERVER_IP}
+docker run --rm --network mynet busybox ping ${WEBSERVER_IP}
 docker run --rm --network mynet busybox ping webserver
 # this should succeed
 ```
@@ -965,6 +983,12 @@ e.g.: `docker.io/library/alpine:3`
 > In some cases even specifying a Version may not suffice.  
 > e.g.: `python` container images also use suffixes like `-trixie` to specify the underlying image OS.
 
+> [!IMPORTANT]  
+> Images can take up a major part of disc space, because there is no automatic cleanup.  
+> `$CR system df` can be used to check the current used disk space.  
+> `$CR image prune` can be used to cleanup unused images.  
+> Or forceully wiht `$CR container image prune -a -f`
+
 
 ### Container Image Specification
 The `Open Container Initiative (OCI)` defined open standards for Container Images, which can be found [here](https://github.com/opencontainers/image-spec).
@@ -990,13 +1014,6 @@ Key points:
 > All layers are part of the final image,  
 > so adding a file or package in one layer and removing it in the next doesn't reduce the final image size.  
 > Only doing this in the same layer affects the final image size.
-
-> [!IMPORTANT]  
-> Images can take up a major part of disc space, because there is no automatic cleanup.  
-> `$CR system df` can be used to check the current used disk space.  
-> `$CR image prune` can be used to cleanup unused images.  
-> Or forceully wiht `$CR container image prune -a -f`
-
 
 ### Pulling a Container Image
 Pulling a `Container Image` will store it locally in the aforementioned directories:
@@ -1112,7 +1129,7 @@ EXPOSE 80
 # The healthcheck should be defined in the compose or kubernetes file
 HEALTHCHECK [OPTIONS] CMD <command>
 
-# The executable and paramters run at the start of the container, can be overwritten with "--environment ''".
+# The executable and paramters run at the start of the container, can be overwritten with "--entrypoint ''".
 ENTRYPOINT ["ls", "-a"]
 # ENTRYPOINT ["executable", "param1", "param2"]
 
@@ -1142,7 +1159,7 @@ $CR run mycontainer
 
 If deesired, it is also possible to build a container and output it into a local directory:
 ```sh
-$CR build -t myimage:1 -f Dockerfile.slim  -o "type=local,dest=myimage-1" .
+$CR build -t myimage:1 -f Dockerfile  -o "type=local,dest=myimage-1" .
 ```
 
 Checkout the [hello-world](dockerfiles/hello-world) for some different coding language examples in the [dockerfiles](dockerfiles/) directory.
@@ -1152,7 +1169,7 @@ Checkout the [hello-world](dockerfiles/hello-world) for some different coding la
 > This makes the API properly available in the container and accessible when connected to the host or to other container.
 
 > [!IMPORTANT]  
-> When building images containing code, be careful what bas eimage is used.  
+> When building images containing code, be careful what base image is used.  
 > Images like `alpine` for example use a different `c-compiler` than e.g. `debian`.  
 > This can also be true for different compiler or packages.
 
@@ -1215,24 +1232,37 @@ $CR run --rm --platform=linux/amd64 alpine:3 uname -m
 > It is also possible to build images for different architectures on separate hosts
 > and combine them by creating a manifest.
 
+> [!NOTE]  
+> When building for multiple architectures the image needs to be pushed to a container registry before it can be used.
+
 
 #### Podman
 
 Enable the QEMU emulation support (binfmt_misc):
 ```sh 
-sudo $podman run --rm --privileged docker.io/multiarch/qemu-user-static --reset -p yes 
+sudo $CR run --rm --privileged docker.io/multiarch/qemu-user-static --reset -p yes 
+```
+
+Create a manifest:
+```sh
+podman manifest create <registry>/<image-name>
 ```
 
 ```sh
-podman build \
+$CR build \
   --platform linux/amd64,linux/arm64 \
-  -t localhost:5000/mymultiatch:0.1 \
+  --manifest <registry>/<image-name> \
   .
 ```
 
-Check for which architectures the image is available for:
+Publish the manifest:
+```sh
+podman manifest push <registry>/<image-name>
 ```
-podman manifest inspect localhost:5000/mymultiatch:0.1
+
+Check for which architectures the image is available for:
+```sh
+$CR manifest inspect <image name>
 ```
 
 #### Docker
@@ -1253,12 +1283,12 @@ docker buildx build \
   --platform linux/amd64,linux/arm64 \
   --output=type=image,push=true,registry.insecure=true \
   -f Dockerfile \
-  --tag localhost:5000/mymultiatch:0.1 .
+  --tag <registry>/<image-name> .
 ```
 
 Check for which architectures the image is available for:
 ```sh
-docker manifest inspect localhost:5000/mymultiatch:0.1 -v
+docker manifest inspect <registry>/<image-name> -v
 ```
 
 Build the image and save it to the same directory:
@@ -1267,7 +1297,7 @@ docker buildx build \
   --platform linux/amd64,linux/arm64 \
   --output=type=local,dest=$PWD \
   -f Dockerfile \
-  --tag mymultiatch:0.1 .
+  --tag <image-name> .
 ```
 
 Stop the custom builder:
@@ -1278,28 +1308,44 @@ docker container stop buildx_buildkit_builder0
 
 ### Best practices
 
-#### Use annotations during build
-The [container image spec](https://github.com/opencontainers/image-spec) also specifies some `annotations` that are recommended to be added during the build process.  
-These include information like who build the image, where can the source code be found, etc., an overview can be found [here](https://github.com/opencontainers/image-spec/blob/main/annotations.md).
+#### Logging
+Applications should log as much as possible but only as much as needed.  
+Well structured, detailed and specific logs are usually more helpful than too many logs.  
+Additionally logs should be properly separated by log level:
+  - `DEBUG`: System flow information
+    - Entering/exiting functions.
+    - Important decision branches ("User has admin role, enabling feature X").
+    - Non-critical events that help reproduce issues.
+  - `INFO`: Application events that are part of the "normal" lifecycle
+    - Application start/stop.
+    - Successful connection to a DB.
+    - Handling a user request.
+    - Periodic health/status messages.
+  - `WARN` (or `WARNING`): Something unexpected happened, but the application can continue running
+    - Deprecated API or function used.
+    - Retry needed due to transient failure.
+    - Config value missing, using a default.
+  - `ERROR`: An error occurred that prevented part of the application from working properly.
+    - Database write failure.
+    - Payment API call failed.
+    - Unhandled exception in a request handler.
+  - `FATAL` (or `CRITICAL`): Severe error that makes the application unusable and requires immediate attention
+    - Application can’t start (e.g., config missing, DB unreachable).
+    - Data corruption detected.
+    - Security breach detected.
 
-They can be added during build with the `--annotation` option:
-  - `--annotation <some-key>=<some-value>`
-For general information about the image the `manifest-descriptor:` prefix should be used:
-  -  `--annotation manifest-descriptor:org.opencontainers.image.url=<url-to-source>`
+In a production environment the `DEBUG` log level should not be used/needed.  
+The other log levels should only container necessary information and not create an information overload,
+so that they are easy check, filter and work with.  
 
-> [!NOTE]  
-> Using labels for these information is possible and still recommended and used by some,
-> but has been superseded by annotations.
+Using centralized logging and monitoring solutions like [Grafana](https://github.com/grafana/grafana) + [Prometheus](https://github.com/prometheus/prometheus) + [Loki](https://github.com/grafana/loki) is always helpful,
+especially since container logs are not retained after a restart.
 
-> [!IMPORTANT]  
-> For `GitLab` instances that don't have the [Container registry metadata database](https://docs.gitlab.com/administration/packages/container_registry_metadata_database/),
-> using `manifest-descriptor` breakes some of the featuers in the Container Registry, like the pulish date and image size.
-> Currenlty the Container registry metadata databaseis only mandatory in versions from the later halve of `2027`: [epics: #5521](https://gitlab.com/groups/gitlab-org/-/epics/5521)
 
 #### Healthchecks
-While the `HEALTHCHECK` option in the Dockerfile/Containerfile is `docker` specific it is good to add some form of capability that allows running a healthcheck in the deplyoment configuration.  
+While the `HEALTHCHECK` option in the Dockerfile/Containerfile is `docker` specific it is good to add some form of capability that allows running a healthcheck in the deployment configuration.  
 For APIs this is quite simple when tools like `curl` or `wget` are available in the container.  
-For other types of applications it has to be implemented differently by adding options to e.g. trigger a function that checks if the application is stil responding
+For other types of applications it has to be implemented differently by adding options to e.g. trigger a function that checks if the application is still responding
 or something to check if the process is working.
 
 #### Reduce image size
@@ -1307,25 +1353,38 @@ Reducing the image size helps save space and cost on the host system.
 It can be done easily by doing small adjustments when building the container image.  
 Additionally there are also tools like [slim](https://github.com/slimtoolkit/slim), which can be useful for reducing image size.
 
-##### Container image layer optimizastion
+
+##### Use small base images
+While it might seem intuitive for some to use images like `debian`, there are often smaller base images available, like:
+  - Instead of `debian:13` use `debian:13-slim`
+  - Instead of `python:3.13` (based on debian) use `python:3.13-slim` or switch to an `alpine` base image: `python:3.13-alpine`
+
+`alpine` is one of the smallest Linux distributions and great to use in a container environment.  
+But be careful that things like the `c-compiler` can differ compared to other distributions.
+
+There are also the [distroless](https://github.com/GoogleContainerTools/distroless) images which can be used for a wide variety.
+
+But nothing beats using an empty `scratch` image that only contains a static binary, though that is not always easily achievable.  
+For applications with outgoing `HTTPS` connections add the `ca-certificates`, like in the [Dockerfile.scratch-with-certificates](Dockerfile.scratch-with-certificates) example.
+
+Checkout the examples in the [Use multi-stage builds](#use-multi-stage-builds) section.
+
+
+##### Container image layer optimization
 A simple way of reducing the container image size is by optimizing the individual layers.  
 
-When installing a package via a package registry, the package list should always be updated, but this also leads to the list still being contained in the image:
-```Dockerfile
-RUN apt update
-RUN apt upgrade -y \
-  && apt install htop
-```
+When installing a package via a package registry, the package list should always be updated, but this also leads to the list still being contained in the image.
 
-Dont do it like this:
+Don't do it like this:
 ```Dockerfile
 RUN apt update
-RUN apt upgrade -y \
-RUN apt install htop \
-RUN apt upgrade -y \
-RUN apt autoclean -y \
-RUN apt autoremove -y \
-RUN apt clean -y \
+RUN apt upgrade -y
+RUN apt install htop
+RUN apt install python3
+RUN apt upgrade -y
+RUN apt autoclean -y
+RUN apt autoremove -y
+RUN apt clean -y
 RUN rm -rf /var/lib/apt/lists* /tmp/* /var/tmp/*
 ```
 The layers stack on top of each other, so while the end result might look good, the individual layers still contain the things that are removed at a later step.
@@ -1362,28 +1421,11 @@ Checkout these example:
 > It is usually required to have the `public certificates` of the target URL:
 >   - For normal valid certificates it usually suffices to install the `ca-certificates` package
 >   - For `self-signed` certificates they need to be added directly
-> Checkout the [Dockerfile.scratch-with-certificates](Dockerfile.scratch-with-certificates) example.
+> Checkout the [Dockerfile.scratch-with-certificates](dockerfiles/Dockerfile.scratch-with-certificates) example.
 
 > [!NOTE]  
 > Each stage results in a stored untagged image.  
 > They can be cleaned up with: `$CR image prune --filter label=stage=builder`
-
-
-##### Use small base images
-While it might seem intuitive for some to use images like `debian`, there are often smaller base images available, like:
-  - Instead of `debian:13` use `debian:13-slim`
-  - Instead of `python:3.13` (based on debian) use `python:3.13-slim` or switch to an `alpine` base image: `python:3.13-alpine`
-
-`alpine` is one of the smallest Linux distributions and great to use in a container environmet.  
-But be careful that things like the `c-compiler` can differ compared to other distributions.
-
-There are also the [distroless](https://github.com/GoogleContainerTools/distroless) images which can be used for a wide varity.
-
-But nothing beats using an empty `scratch` image that only contains a static binary, though that is not always easily achievable.  
-For applications with outgoing `HTTPS` connections add the `ca-certificates`, like in the [Dockerfile.scratch-with-certificates](Dockerfile.scratch-with-certificates) example.
-
-Checkout the examples in the [Use multi-stage builds](#use-multi-stage-builds) section.
-
 
 
 #### Use non-root
@@ -1456,6 +1498,24 @@ There are tools like [trivy](https://github.com/aquasecurity/trivy) and [osv-sca
 > That doesn't mean that there will not be any vulnerability found in the future.  
 > Vulnerability checks should be done on a regular and continuous basis.
 
+#### Use annotations during build
+The [container image spec](https://github.com/opencontainers/image-spec) also specifies some `annotations` that are recommended to be added during the build process.  
+These include information like who build the image, where can the source code be found, etc., an overview can be found [here](https://github.com/opencontainers/image-spec/blob/main/annotations.md).
+
+They can be added during build with the `--annotation` option:
+  - `--annotation <some-key>=<some-value>`
+For general information about the image the `manifest-descriptor:` prefix should be used:
+  -  `--annotation manifest-descriptor:org.opencontainers.image.url=<url-to-source>`
+
+> [!NOTE]  
+> Using labels for these information is possible and still recommended and used by some,
+> but has been superseded by annotations.
+
+> [!IMPORTANT]  
+> For `GitLab` instances that don't have the [Container registry metadata database](https://docs.gitlab.com/administration/packages/container_registry_metadata_database/),
+> using `manifest-descriptor` breakes some of the featuers in the Container Registry, like the pulish date and image size.
+> Currenlty the Container registry metadata databaseis only mandatory in versions from the later halve of `2027`: [epics: #5521](https://gitlab.com/groups/gitlab-org/-/epics/5521)
+
 #### Sign the container images
 With tools like [cosign](https://github.com/sigstore/cosign) have the possibility to sign contaier images.
 
@@ -1497,7 +1557,7 @@ incomplete copying from a documented command and so forth.
 
 This is where `Compose files` come in.  
 A `Compose file` is a `YAML` configuration file that describes how to run a set of containers as services.  
-The default filename is `docker-compose.yml`, but can differe if needed.
+The default filename is `docker-compose.yml`, but can differ if needed.
 
 It can be used to define `services`, `networks`, `volumes`, and more in a declarative way.  
 Like with CLI commands there are short and long versions that can be used in a compose file.  
@@ -1513,8 +1573,8 @@ A minimal webserver example can look like this:
 # The services section can contain one or more service definitions
 # Each individual service can contain one or more container
 services: 
-  web:  # This is the name of the service, which can be set to anything
-    image: docker.io/nginx:1-alpine # The image used for the container of the service "web"
+  webserver:  # This is the name of the service, which can be set to anything
+    image: docker.io/nginx:1-alpine # The image used for the container of the service "webserver"
     ports:  # A list of ports to be exposed
       - target: 8080  # Port on the host system
         published: 80 # Port in the container
@@ -1523,7 +1583,7 @@ services:
         # The mode is important for a Docker Swarm setup.
         # "ingress" mode (default) means the port is exposed on one host and Docker Swarm uses loadbalancing
         # "host" mode publishes the port on all nodes
-    volumes:  # A list of volume mounts simliar to "docker run"
+    volumes:  # A list of volume mounts similar to "docker run"
       - source: ./data
         target: /usr/share/nginx/html
         type: bind
@@ -1572,7 +1632,7 @@ $CR compose -f compose-files/docker-compose.networking.yml up -d
 
 Connect to the container by service name:
 ```sh
-$CR container run --rm -it --net=container:$($CR container ls --filter name=webserver-1 --quiet) busybox nslookup webserver-1
+$CR container run --rm --net=container:$($CR container ls --filter name=webserver-1 --quiet) busybox nslookup webserver-1
 ```
 
 Start the networking example deployment:
@@ -1596,7 +1656,33 @@ Since `compose files` use the `YAML` syntax it is possible to use `YAML anchor` 
 Checkout the [docker-compose.yaml-anchor.yml](compose-files/docker-compose.yaml-anchor.yml) example.  
 For further details check the [YAML reference](https://yaml.org/).
 
-### Update config in parallel
+#### Healthchecks
+Use healthchecks whenever possible to ensure that deployments are properly functional.
+
+Get the Healthcheck logs:
+```sh
+$CR inspect $($CR container ls --filter name=webserver --quiet) --format "{{json .State.Health }}" |
+grep -Eo '"[^"]*" *(: *([0-9]*|"[^"]*")[^{}\["]*|,)?|[^"\]\[\}\{]*|\{|\},?|\[|\],?|[0-9 ]*,?' |
+awk '{if ($0 ~ /^[}\]]/ ) offset-=4; printf "%*c%s\n", offset, " ", $0; if ($0 ~ /^[{\[]/) offset+=4}'
+```
+- The `inspect` section extracts the `.State.Health` field from a running container named `webserver`
+- The `grep` section takes the returned `JSON` output from the `inspect` and breaks it into multiple lines
+- The `awk` section basically makes a pretty-print of the content
+For simplicity the package `jq` can also be used instead of `grep` and `awk`.
+
+#### Limit logging
+In the logging section of a service it is possible to configure how logs from the container should be handeld.  
+By default it doesn't limit the amount of logs which can completly fill the host disk space.  
+Therefore limiting logs is always recommended:
+```yaml
+    logging:
+      driver: "json-file"
+      options:
+        max-file: "5"
+        max-size: "10m"
+```
+
+#### Update config in parallel (mainly Docker Swarm)
 When deploying multiple replicas of a service use the `update_config` option
 to define how many services are allowed to be updated at the same time:
 ```yml
@@ -1614,34 +1700,7 @@ services:
         condition: on-failure
 ```
 
-### Healthchecks
-Use healthchecks whenever possible to ensure that deployments are properly functional.
-
-Get the Healthcheck logs:
-```sh
-$CR inspect $($CR container ls --filter name=webserver --quiet) --format "{{json .State.Health }}" |
-grep -Eo '"[^"]*" *(: *([0-9]*|"[^"]*")[^{}\["]*|,)?|[^"\]\[\}\{]*|\{|\},?|\[|\],?|[0-9 ]*,?' |
-awk '{if ($0 ~ /^[}\]]/ ) offset-=4; printf "%*c%s\n", offset, " ", $0; if ($0 ~ /^[{\[]/) offset+=4}'
-```
-- The `inspect` section extracts the `.State.Health` field from a running container named `webserver`
-- The `grep` section takes the returned `JSON` output from the `inspect` and breaks it into multiple lines
-- The `awk` section basically makes a pretty-print of the content
-For simplicity the package `jq` can also be used instead of `grep` and `awk`.
-
-
-### Limit logging
-In the logging section of a service it is possible to configure how logs from the container should be handeld.  
-By default it doesn't limit the amount of logs which can completly fill the host disk space.  
-Therefore limiting logs is always recommended:
-```yaml
-    logging:
-      driver: "json-file"
-      options:
-        max-file: "5"
-        max-size: "10m"
-```
-
-### Limit capabilities
+#### Limit capabilities
 Capabilities are distinct units of privilege in the kernel.  
 They are things like the ability to send raw IP packets, or bind to ports below 1024.
 Most capabilities are required to manipulate the kernel/system, and these are used by the container runtime, but seldom used by the processes running inside the container.
@@ -1680,7 +1739,7 @@ More information about capabilites can be found here:
   - [Docker runtime privilege and linux capabilities](https://docs.docker.com/engine/containers/run/#runtime-privilege-and-linux-capabilities)
   - [Docker compsoe capabilites reference](https://docs.docker.com/reference/compose-file/services/#cap_add)
 
-### Set resource limits
+#### Set resource limits
 By default, containers can use as much CPU and memory as the host allows. This can lead to:
   - One misbehaving container consuming all RAM and causing the host to swap/crash.
   - One container monopolizing CPU and starving others.
@@ -1728,7 +1787,7 @@ Docker Swarm is Docker’s built-in orchestrator. It’s simpler than Kubernetes
 Limitations:
   - Development of Swarm has slowed significantly.
     - Many bugs have accumulated over the years.
-    - some `compose` features are not available or are broken in Swarm.
+    - Some `compose` features are not available or are broken in Swarm.
   - Lacks advanced features like namespaces, CRDs, or mature ecosystem integration.
   - Best for small/simple setups or training, but not the industry standard today.
 
@@ -1860,11 +1919,11 @@ Kubernetes (k8s) is the de facto industry standard for orchestration.
     - Declarative YAML manifests
     - Self-healing workloads
     - Advanced networking, storage, and scaling
-    - Operator for autoamated deployment and livecycle manager
-    - Huge ecosystem ([CNCF landscape](https://landscape.cncf.io/))
-      - [HELM](https://helm.sh/) to manage Kubernetes applications
-      - [ArtifactHUB](https://artifacthub.io/) as central marektplace for `HELM` templates
-      - [OperatorHub](https://operatorhub.io/) as central marketplace for operator
+    - Operator for automated deployment and livecycle manager
+    - Huge ecosystem ([CNCF landscape](https://landscape.cncf.io))
+      - [HELM](https://helm.sh) to manage Kubernetes applications
+      - [ArtifactHUB](https://artifacthub.io) as central marektplace for `HELM` templates
+      - [OperatorHub](https://operatorhub.io) as central marketplace for operator
 
 Lightweight distributions variants:
   - [rke2](https://github.com/rancher/rke2) – Hardened single binary Kubernetes distribution from Rancher.
@@ -1915,7 +1974,7 @@ podman kube play --down data/webserver-k8s.yaml
 ## General Best practices
 
 #### File descriptor limits
-Many Linux distributions limit open files per process to `1024`.  
+Many Linux distributions limit the open files per process to `1024`.  
 Orchestrators handling many sockets (reverse proxies, monitoring, MQTT brokers) easily exceed this.  
 Raising the limit is often a requriement, otherwise the operation can be compromised with some cntainer not properly functioning.
 
@@ -1935,7 +1994,7 @@ sudo bash -c " echo '* hard nofile 1000000' >> /etc/security/limits.conf"
 sudo bash -c " echo '* soft nofile 1000000' >> /etc/security/limits.conf"
 ```
 
-#### DNS responses for outgoing connections
+#### Cache DNS responses for outgoing connections
 For outgoing connections when using `DNS names` repeated DNS querries are done,
 because the responses usually are not stored properly.  
 This can flood `DNS servers` which should be avoided.

@@ -3,9 +3,9 @@
 This is a set of Hello-World examples with different programming languages packaged as container images.  
 What is quite interesting to observe is the difference in the final image size.
 
-```sh
-CR=$(command -v podman || command -v docker)
-```
+Set the `CR` variable depending on what is installed:
+  - Podman: `CR=podman`
+  - Docker: `CR=docker`
 
 ## Python, dynamic binary
 ```sh
