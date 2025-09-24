@@ -1707,7 +1707,7 @@ Most capabilities are required to manipulate the kernel/system, and these are us
 
 Therefore to increase security it is recommended to enable as few capabilities as needed when running a container.
 
-Get default Capabilites:
+Get default Capabilities:
 ```sh
 $CR run --rm fedora capsh --print
 # $CR  run --network=host --rm alpine sh -c 'apk add -U libcap; capsh --print'
@@ -1734,10 +1734,10 @@ services:
       - ...
 ```
 
-More information about capabilites can be found here:
+More information about capabilities can be found here:
   - [Linux capabilities man page](https://man7.org/linux/man-pages/man7/capabilities.7.html)
   - [Docker runtime privilege and linux capabilities](https://docs.docker.com/engine/containers/run/#runtime-privilege-and-linux-capabilities)
-  - [Docker compsoe capabilites reference](https://docs.docker.com/reference/compose-file/services/#cap_add)
+  - [Docker compsoe capabilities reference](https://docs.docker.com/reference/compose-file/services/#cap_add)
 
 #### Set resource limits
 By default, containers can use as much CPU and memory as the host allows. This can lead to:
@@ -1752,17 +1752,17 @@ services:
     image: docker.io/nginx:1-alpine
     deploy:
       resources:
-        reservations: # Soft guarantee of the ressources if available
+        reservations: # Soft guarantee of the resources if available
           cpus: '0.25'  # Percent of a Core
           memory: 20M
-        limits: # Hard limit of ressources that can be used, exceeding it can lead to the service being killed
+        limits: # Hard limit of resources that can be used, exceeding it can lead to the service being killed
           cpus: '0.50'
           memory: 50M
 ```
-Often it is not easy to properly determine how many ressources an applicaiton needs to properly run.  
+Often it is not easy to properly determine how many resources an applicaiton needs to properly run.  
 For applications with a predefined load this can be done easily,
 but for applications like web services the load can differ vastly making it more difficult.  
-Since exceeding the ressource limits lead to the service being killed, this option should be used carefully.
+Since exceeding the resource limits lead to the service being killed, this option should be used carefully.
 
 
 ## Orchestration: Docker Swarm & Kubernetes
@@ -1770,7 +1770,7 @@ Running containers with `docker run` or `compose files` is fine for local develo
 - Scalability - automatically running more replicas when demand grows.
 - Fault tolerance - restarting containers on failure, redistributing workloads if a node goes down.
 - Service discovery & networking - assigning DNS names and load balancing between replicas.
-- Configuration & secrets management - distributing environment variables, certificates, and keys.
+- Configuration & secrets management - distributing configuration and credentials
 - Rolling updates & rollbacks – upgrading without downtime.
 
 This is where orchestration platforms come in.
@@ -1914,15 +1914,15 @@ docker stack rm net-test
 Kubernetes (k8s) is the de facto industry standard for orchestration.
   - Originated at Google as Borg, later open-sourced.
   - Highly extensible, modular and powerful, but more complex than Swarm.
-  - [6 month livecycle](https://endoflife.date/kubernetes) for a kubernetes distribution
+  - [6 month lifecycle](https://endoflife.date/kubernetes) for a kubernetes distribution
   - Supports:
     - Declarative YAML manifests
     - Self-healing workloads
     - Advanced networking, storage, and scaling
-    - Operator for automated deployment and livecycle manager
+    - Operator for automated deployment and lifecycle managing
     - Huge ecosystem ([CNCF landscape](https://landscape.cncf.io))
       - [HELM](https://helm.sh) to manage Kubernetes applications
-      - [ArtifactHUB](https://artifacthub.io) as central marektplace for `HELM` templates
+      - [ArtifactHUB](https://artifacthub.io) as central marketplace for `HELM` templates
       - [OperatorHub](https://operatorhub.io) as central marketplace for operator
 
 Lightweight distributions variants:
@@ -1932,7 +1932,7 @@ Lightweight distributions variants:
 
 
 The modularity and extensiblity of Kubernetes adds a high level of komplexity to maintenace and developement.  
-With a 6 month livecycle it would be foolish to do things manually.  
+With a 6 month lifecycle it would be foolish to do things manually.  
 There are many tools like the [System Upgrade Controller](https://github.com/rancher/system-upgrade-controller)
 that help automatizing things, but they also add complexity and need to be maintained.
 
