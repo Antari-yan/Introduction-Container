@@ -58,8 +58,31 @@ Running many VMs wastes system resources and complicate scaling.
     - This makes it non-trivial to run `systemd` inside of a container
 
 ### Background
+#### Linux Namespaces
+Linux namespaces provide isolation for system resources,
+meaning a process or a group of processes can operate in its own `namespace`,
+unaware of other processes using the same resources in different namespaces.  
+Namespaces isolate processes, allowing them to have their own view of system resources like process IDs (PIDs), file systems, network interfaces, user IDs, and more.
+
+Each type of namespace provides isolation for a specific system resource:
+  - PID namespace: Isolates the process IDs, meaning processes in one namespace can't see or affect processes in another namespace.
+  - Mount namespace: Isolates the file system mount points.
+  - Network namespace: Isolates network interfaces, IP addresses, routing tables, etc.
+  - UTS namespace: Isolates hostname and domain name.
+  - IPC namespace: Isolates inter-process communication resources such as shared memory and message queues.
+  - User namespace: Isolates user and group IDs, allowing a process to have different user IDs inside and outside the namespace.
+  - Cgroup namespace: Isolates control group (cgroup) resources, which are used to manage resource allocation (CPU, memory, etc.).
+
+Namespaces are used to provide isolation for containers. Each container is placed in its own namespaces, giving the impression of a separate machine with its own processes, network interfaces, and file system.
+
+#### Linux Containers (LXC)
+- LXC (Linux Containers), introduced around 2008, was the first user-friendly toolset to manage the `namespace` kernel features.
+- It allowed running multiple isolated Linux systems (lightweight VMs) on a single host.
+- While powerful, LXC was considered low-level and lacked a standardized way to distribute, version, and manage applications.
+
 #### Docker
 - Launched in 2013 by the `dotCloud` company (later renamed to `Docker, Inc.`), Docker popularized containers by making them easy to build, share, and run.
+- Initially utilized LXC and later switched to its own runtime (libcontainer, later runc).
 - Prior to Docker, Linux had features like cgroups and namespaces that enabled containers, but they were difficult to use. Docker wrapped these capabilities in a simple developer-friendly interface.
 - Docker’s key innovation was the `Docker Image` and `Dockerfile`, which streamlined the process of defining environments and distributing them via `Docker Hub`.
 - 2019 `Docker, Inc.` sold its enterprise business to `Mirantis`
@@ -105,22 +128,6 @@ Running many VMs wastes system resources and complicate scaling.
 - It’s popular in enterprise and security-sensitive contexts and integrates tightly with `systemd`.
 - Also uses the concept of `pods` like Kubernetes
 
-#### Linux Namespaces
-Linux namespaces provide isolation for system resources,
-meaning a process or a group of processes can operate in its own `namespace`,
-unaware of other processes using the same resources in different namespaces.  
-Namespaces isolate processes, allowing them to have their own view of system resources like process IDs (PIDs), file systems, network interfaces, user IDs, and more.
-
-Each type of namespace provides isolation for a specific system resource:
-  - PID namespace: Isolates the process IDs, meaning processes in one namespace can't see or affect processes in another namespace.
-  - Mount namespace: Isolates the file system mount points.
-  - Network namespace: Isolates network interfaces, IP addresses, routing tables, etc.
-  - UTS namespace: Isolates hostname and domain name.
-  - IPC namespace: Isolates inter-process communication resources such as shared memory and message queues.
-  - User namespace: Isolates user and group IDs, allowing a process to have different user IDs inside and outside the namespace.
-  - Cgroup namespace: Isolates control group (cgroup) resources, which are used to manage resource allocation (CPU, memory, etc.).
-
-Namespaces are used to provide isolation for containers. Each container is placed in its own namespaces, giving the impression of a separate machine with its own processes, network interfaces, and file system.
 
 #### Windows and Apple
 Both Windows and Apple have developed their own approaches for container and container runtime.
