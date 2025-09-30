@@ -339,8 +339,15 @@ $CR container stop alpine-container
 Retrieve container logs:
 ```sh
 $CR container logs <container-name>
+# use "-n x", where x is the number of total last lines from the logs should be shown
 ```
-By default all output to `stdout/stderr` in the container is captured by the containr runtime as logs.  
+
+To filter the logs with `grep`, pipe the log output to the hosts `stdout`:
+```sh
+$CR container logs <container-name> 2>&1 | grep "some text"
+```
+
+By default all output to `stdout/stderr` in the container is captured by the container runtime as logs.  
 They are stored together with the container data by default as `json-file` (Docker) and `k8s-file` (Podman, `json-file` aliased to it).  
 But there are also other logging driver like `systemd`/`journald` and more.
 
