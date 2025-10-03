@@ -1633,6 +1633,11 @@ Stop them with:
 $CR compose -f compose-files/docker-compose.registry.yml up -d
 ```
 
+> [!NOTE]  
+> Variables defined in the environment section can be used in the `command` and `entypoint` sections.  
+> For that use two `$` instead of a single one, an example can be found in `compose-files/docker-compose.placeholder-templates.yml`.
+
+
 ### Networking
 By default, even if no network is explicitly defined,
 a compose deplyoment will create a custom network and adds all services to it that doen't have a network defined.  
