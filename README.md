@@ -26,6 +26,24 @@ While it won't be covered, both also have a UI tool:
   - [Docker Desktop](https://www.docker.com/products/docker-desktop/) (Requires License for commercial use)
   - [VSCode Extension](https://marketplace.visualstudio.com/items?itemName=ms-azuretools.vscode-containers)
 
+### Optional Post-installation steps
+#### Docker - add user to the `docker` group
+After installing Docker, run the following to avoid needing `sudo` for every command:
+```bash
+sudo usermod -aG docker $USER
+newgrp docker
+```
+> [!NOTE]
+> `newgrp docker` activates the group in the current shell without logging out.
+> On the next login the group is active automatically.
+
+#### Podman - enable the user socket (for API / compose compatibility)
+```bash
+systemctl --user enable --now podman.socket
+```
+This is required for tools that speak the Docker socket API (e.g. some compose plugins or the `docker` CLI pointed at Podman).
+
+
 
 
 ## Motivation & Background of container
@@ -84,7 +102,7 @@ Namespaces are used to provide isolation for containers. Each container is place
 - Launched in 2013 by the `dotCloud` company (later renamed to `Docker, Inc.`), Docker popularized containers by making them easy to build, share, and run.
 - Initially utilized LXC and later switched to its own runtime (libcontainer, later runc).
 - Prior to Docker, Linux had features like cgroups and namespaces that enabled containers, but they were difficult to use. Docker wrapped these capabilities in a simple developer-friendly interface.
-- Docker’s key innovation was the `Docker Image` and `Dockerfile`, which streamlined the process of defining environments and distributing them via `Docker Hub`.
+- Docker's key innovation was the `Docker Image` and `Dockerfile`, which streamlined the process of defining environments and distributing them via `Docker Hub`.
 - 2019 `Docker, Inc.` sold its enterprise business to `Mirantis`
 - Today, Docker still exists as the developer-facing tool, but its role in orchestration has been eclipsed by Kubernetes.
 - Uses the moby project as the upstream for the Docker Product: https://github.com/moby/moby
@@ -98,7 +116,7 @@ Namespaces are used to provide isolation for containers. Each container is place
 #### Docker Swarm
 - Docker initially pushed `Docker Swarm` (launched in 2014) as its orchestration solution.
 - Swarm is simpler to use than Kubernetes, but lacked the capabilities, flexibility, and community backing of Kubernetes.
-- By 2017–2018, `Kubernetes` was more widely used, and `Docker Swarm` fell into minimal maintenance mode, but it is still available.
+- By 2017-2018, `Kubernetes` was more widely used, and `Docker Swarm` fell into minimal maintenance mode, but it is still available.
 - Because of the minimal maintenance there are many bugs and missing configuration options that are otherwise available for a Standalone Docker. (e.g., `depends_on`, `deploy.mode: replicated-job`, ...)
 
 #### Kubernetes (k8s)
@@ -123,9 +141,9 @@ Namespaces are used to provide isolation for containers. Each container is place
 
 #### Podman
 - Developed by `Red Hat` as an open-source daemonless and rootless alternative to Docker.
-- Unlike Docker, Podman doesn’t require a background service (`dockerd`) and can run entirely without root privileges, improving security.
-- Podman intentionally mimics Docker’s CLI, so commands like `podman run` are nearly identical to `docker run`.
-- It’s popular in enterprise and security-sensitive contexts and integrates tightly with `systemd`.
+- Unlike Docker, Podman doesn't require a background service (`dockerd`) and can run entirely without root privileges, improving security.
+- Podman intentionally mimics Docker's CLI, so commands like `podman run` are nearly identical to `docker run`.
+- It's popular in enterprise and security-sensitive contexts and integrates tightly with `systemd`.
 - Also uses the concept of `pods` like Kubernetes
 
 
@@ -152,9 +170,9 @@ A container is:
     - libraries and dependencies (optional)
     - system tools (optional)
     - runtime (e.g., Python interpreter, Java runtime) (optional)
-  - Runs in `isolation` from other containers and from the host system, while still sharing the host’s operating system kernel.
+  - Runs in `isolation` from other containers and from the host system, while still sharing the host's operating system kernel.
 
-This means that if your software runs inside a container on your laptop, the same container will run the same way on a server, a colleague’s workstation, or in the cloud.
+This means that if your software runs inside a container on your laptop, the same container will run the same way on a server, a colleague's workstation, or in the cloud.
 
 ### Analogy: Shipping Containers
 The best way to think about containers is to compare them with shipping containers in logistics:
@@ -397,9 +415,13 @@ $CR container inspect $($CR container ls --filter name=webserver --quiet) --form
 - `println .`: Print each item in the range
 - `end`: Closes range
 Sometimes `printenv` and `printenv <var>` are also available:
+```sh
+$CR exec $($CR container ls --filter status=running --filter name=webserver --quiet) printenv
 ```
-$CR exec $(docker container ls --filter name=webserver --quiet) printenv
-```
+
+> [!NOTE]
+> Always add `--filter status=running` when filtering containers by name in scripts
+> to avoid accidentally matching stopped containers that share the same name prefix.
 
 Get all network names connected to a container:
 ```sh
@@ -655,9 +677,9 @@ By default, each container runs in its own network namespace.
 Additionally container are also capable for outbound communication (e.g. access the internet).  
 That is because the container runtime (Podman/Docker) sets up NAT (Network Address Translation) rules using `iptables`/ `nftables`:
   - Containers get an IP from the internal bridge network.
-  - Outgoing packets are masqueraded as if they came from the host’s IP.
+  - Outgoing packets are masqueraded as if they came from the host's IP.
   - Replies from the internet are routed back to the container.
-Analogy: It’s similar to how multiple devices share one home router IP:
+Analogy: It's similar to how multiple devices share one home router IP:
   - Containers = PCs/laptops/phones in a home network
   - Docker bridge = home Wi-Fi router
   - Host system = the internet gateway
@@ -698,7 +720,7 @@ Additionally container can be in multiple networks.
 
 #### Default Bridge Network
 - In podman the default bridge network needs to be attached explicitly with `--network podman`.
-- In docker when you run a container without specifying a network, it’s attached to the default bridge network.
+- In docker when you run a container without specifying a network, it's attached to the default bridge network.
   - It can also be added manually with `--network bridge`.
 - All container on this bridge can talk to each other using their private IP addresses.
 - To expose services to the host, port mapping needs to be used.
@@ -790,6 +812,15 @@ $CR network rm mynet
 > [!NOTE]  
 > Manually created networks aren't cleaned up automatically and take up disk space.  
 > `$CR network prune` or `$CR network prune -f` can be used to remove all unused networks.
+
+
+#### Connecting to a host service from inside a container
+Sometimes a container needs to reach a service running on the host (e.g. a reverse proxy, database, or local dev server).
+The special `host-gateway` alias resolves to the host's IP as seen from the container:
+```sh
+$CR run --rm --add-host=myservice.localhost:host-gateway \
+  alpine wget -qO- http://myservice.localhost:<port>
+```
 
 
 ### Sharing namespaces between containers
@@ -1344,7 +1375,7 @@ Additionally logs should be properly separated by log level:
     - Payment API call failed.
     - Unhandled exception in a request handler.
   - `FATAL` (or `CRITICAL`): Severe error that makes the application unusable and requires immediate attention
-    - Application can’t start (e.g., config missing, DB unreachable).
+    - Application can't start (e.g., config missing, DB unreachable).
     - Data corruption detected.
     - Security breach detected.
 
@@ -1448,7 +1479,7 @@ Using a non-root user in a container improves security because:
   - A non-root process inside a container limits what can be read, written, or executed
   - It can prevent accidental (or malicious) interference with other workloads (e.g. when using mounts)
   - It follows the `Least Privilege Principle`:
-    - Most applications don’t need root access to run
+    - Most applications don't need root access to run
     - Running as a less-privileged user means even if compromised, the attacker has fewer permissions
 
 Checkout these example:
@@ -1616,7 +1647,14 @@ By default if in the same directory as the compose file a `.env` variable exists
 The read environment variables can than be set as values for most options in the compose file with `$var-name`.  
 They work similar to `shell variables` and can have defaults defined `${var-name:-default-value}`
 
-Further options can be found in the [Docker Compose Reference](https://docs.docker.com/reference/compose-file/).
+Further options can be found in the [Docker Compose Reference](https://docs.docker.com/reference/compose-file).
+
+> [!NOTE]
+> Docker Compose files can also be packaged and distributed as `OCI artifacts`
+> (stored in a container registry alongside images).
+> - [Package and deploy Docker Compose applications as OCI artifacts](https://docs.docker.com/compose/how-tos/oci-artifact)
+> - [Implementation for GitLab Container Registry](https://gitlab.com/groups/gitlab-org/-/epics/7056)
+
 
 Checkout the following examples:
   - [docker-compose.registry.yml](compose-files/docker-compose.registry.yml)
@@ -1665,6 +1703,35 @@ $CR compose -f compose-files/docker-compose.networking.yml down
 > Therefore it is advised to either use a different hostname from the service name.  
 > Most of the time the hostname isn't needed, so not explicitly setting it is better.  
 > Checkout the [Docker Swarm DNS](#dns) example for more details.
+
+
+#### Injecting dynamic config files via environment variables
+Some containers expect a config file.  
+Usually the correct approach is to use a volume or add the config to the container durin built time,
+but sometimes the config file needed is exceptionally small that wouldn't be worth the effort.
+A possible solution is to add the config file as environment variable and writing it too a file before relevant start command:
+```yaml
+# In a compose file
+services:
+  traefik:
+    environment:
+      TLS_DYNAMIC: |
+        tls:
+          certificates:
+            - certFile: /etc/ssl/certs/server.pem
+              keyFile:  /etc/ssl/private/server.key
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        echo "$$TLS_DYNAMIC" > /tmp/tls-dynamic.yaml
+        exec /entrypoint.sh "$$@"
+      - --
+      # A single `$` would be interpreted by compose itself during variable substitution
+      # `exec` replaces the shell process with the real entrypoint so that PID 1 remains the application
+    command:
+      - --configfile=/tmp/tls-dynamic.yaml
+```
 
 
 ### Best practices
@@ -1790,12 +1857,12 @@ Running containers with `docker run` or `compose files` is fine for local develo
 - Fault tolerance - restarting containers on failure, redistributing workloads if a node goes down.
 - Service discovery & networking - assigning DNS names and load balancing between replicas.
 - Configuration & secrets management - distributing configuration and credentials
-- Rolling updates & rollbacks – upgrading without downtime.
+- Rolling updates & rollbacks - upgrading without downtime.
 
 This is where orchestration platforms come in.
 
 ### Docker Swarm
-Docker Swarm is Docker’s built-in orchestrator. It’s simpler than Kubernetes and good for small to medium clusters.
+Docker Swarm is Docker's built-in orchestrator. It's simpler than Kubernetes and good for small to medium clusters.
   - Cluster setup: A Swarm is initialized with `docker swarm init`, then other nodes join as managers or workers.
   - Deployment: Applications are deployed with `docker stack deploy -c docker-compose.yml myapp`.
   - Scaling: Each service can be scaled dynamically (`docker service scale myservice=5`), but these changes don't persist if a stack iss stopped and restarted.
@@ -1866,7 +1933,23 @@ For clustered services (recommended for `databases`) it would be recommended to 
 #### Docker Swarm Networking
 In Swarm mode networks are usualy of the `overlay` type making them availavble on all nodes.  
 Important to note that manually attaching a container to a network is not possible by default.  
-To make this possible the option `--attachable` has to be added.
+To make this possible the option `--attachable` has to be added:
+```bash
+docker network create proxy_network --driver overlay --attachable
+```
+
+Services in other stacks can join this network by name in their compose file.
+```yaml
+services:
+  web-net:
+  networks:
+    proxy_network:
+
+networks:
+  proxy_network:
+    external: true
+```
+
 
 ##### Overlay vs Bridge network
 In an `overlay` network the Docker DNS behaves differently compared to `bridge` networks.  
@@ -1933,7 +2016,8 @@ docker stack rm net-test
 Kubernetes (k8s) is the de facto industry standard for orchestration.
   - Originated at Google as Borg, later open-sourced.
   - Highly extensible, modular and powerful, but more complex than Swarm.
-  - [6 month lifecycle](https://endoflife.date/kubernetes) for a kubernetes distribution
+  - Follows an [N-2 support policy](https://endoflife.date/kubernetes): the 3 most recent minor versions receive security and bug fixes.  
+    With a `~4 Month` release cycle each release is supported for approximately `14 months`.
   - Supports:
     - Declarative YAML manifests
     - Self-healing workloads
@@ -1945,9 +2029,9 @@ Kubernetes (k8s) is the de facto industry standard for orchestration.
       - [OperatorHub](https://operatorhub.io) as central marketplace for operator
 
 Lightweight distributions variants:
-  - [rke2](https://github.com/rancher/rke2) – Hardened single binary Kubernetes distribution from Rancher.
-  - [k3s](https://github.com/k3s-io/k3s) – Minimal single binary Kubernetes, great for edge, IoT, CI and developement.
-  - [k3d](https://github.com/k3d-io/k3d) – Run k3s inside Docker, great for dev/test.
+  - [rke2](https://github.com/rancher/rke2) - Hardened single binary Kubernetes distribution from Rancher.
+  - [k3s](https://github.com/k3s-io/k3s) - Minimal single binary Kubernetes, great for edge, IoT, CI and developement.
+  - [k3d](https://github.com/k3d-io/k3d) - Run k3s inside Docker, great for dev/test.
 
 
 The modularity and extensiblity of Kubernetes adds a high level of komplexity to maintenace and developement.  
@@ -1991,8 +2075,14 @@ podman kube play --down data/webserver-k8s.yaml
 
 
 ## General Best practices
+### Validating the Docker daemon configuration
+Before restarting `dockerd` after editing `/etc/docker/daemon.json`, validate the config:
+```bash
+dockerd --validate
+```
 
-#### File descriptor limits
+
+### File descriptor limits
 Many Linux distributions limit the open files per process to `1024`.  
 Orchestrators handling many sockets (reverse proxies, monitoring, MQTT brokers) easily exceed this.  
 Raising the limit is often a requriement, otherwise the operation can be compromised with some cntainer not properly functioning.
@@ -2013,7 +2103,56 @@ sudo bash -c " echo '* hard nofile 1000000' >> /etc/security/limits.conf"
 sudo bash -c " echo '* soft nofile 1000000' >> /etc/security/limits.conf"
 ```
 
-#### Cache DNS responses for outgoing connections
+> [!IMPORTANT]
+> [Docker Engine v29.0 (containerd v2.1.5)](https://docs.docker.com/engine/release-notes/29) changed the default open file descriptor limit for containers:  
+> Containers now inherit the host's soft `nofile` limit by default, which is typically much lower (`1024`for Ubuntu) and
+> may lead to issues with services that require a high limit (monitoring, proxies, databases).
+
+
+### inotify resource limits
+The `"too many open files"` error can also be caused by exhausting `inotify` resources.
+This is especially common when running logging and metrics collection container
+(e.g. Prometheus node-exporter, Filebeat, Loki promtail, etc.).
+
+Check the current limits:
+```sh
+cat /proc/sys/fs/inotify/max_user_watches
+cat /proc/sys/fs/inotify/max_user_instances
+```
+
+Temporarily increase the limits (resets on reboot):
+```sh
+sudo sysctl fs.inotify.max_user_watches=524288
+sudo sysctl fs.inotify.max_user_instances=1024
+```
+
+To make the change persistent by creating a file `/etc/sysctl.d/99-inotify-limits.conf`:
+```ini
+fs.inotify.max_user_watches = 524288
+fs.inotify.max_user_instances = 1024
+```
+
+To find which processes are consuming inotify watches:
+```sh
+# Count active watchers system-wide (kernel perspective)
+sudo find /proc/*/fdinfo -type f -exec grep -H inotify {} + 2>/dev/null | wc -l
+
+# Break down by PID and process name
+sudo find /proc/*/fdinfo -type f -exec grep -H inotify {} + 2>/dev/null \
+  | awk -F'/' '{print $3}' | sort | uniq -c | sort -nr \
+  | while read count pid; do
+      printf "%5s %s %s\n" "$count" "$pid" "$(ps -p $pid -o comm= 2>/dev/null)"
+    done
+```
+
+> [!WARNING]
+> These numbers only reflect the `current` steady state.
+> During a rolling deployment, new containers start before old ones are removed,
+> which can temporarily double the watcher count.  
+> Size limits accordingly for large clusters.
+
+
+### Cache DNS responses for outgoing connections
 For outgoing connections when using `DNS names` repeated DNS querries are done,
 because the responses usually are not stored properly.  
 This can flood `DNS servers` which should be avoided.
@@ -2048,7 +2187,6 @@ here is an example for `Docker` to use the hosts `systemd-resolved`:
     ```sh
     sudo systemctl restart systemd-resolved.service
     ```
-
 
 
 ## Misc
@@ -2117,6 +2255,7 @@ Since `runc` is used to actually run container, it is possible to use it directl
 While this container only contains a single binary, it is absolutely possible to add a full Linux distribution by adding its root filesystem into the `rootfs` directory.  
 For example the [Alpine Linux mini root filesystem](https://alpinelinux.org/downloads/).
 
+
 ### Change Docker/Pdoman container runtime
 It is possible to change the container runtime used in `Docker` and `Podman`.
 
@@ -2156,3 +2295,10 @@ Here is an example to use [crun](https://github.com/containers/crun/):
 details can be found here:
   - [Docker Engine alternative container runtimes](https://docs.docker.com/engine/daemon/alternative-runtimes/)
   - [Docker Compose runtime specification](https://docs.docker.com/reference/compose-file/services/#runtime)
+
+
+### Parallel computing (MPI / OpenMP)
+Containers can be used for MPI workloads (e.g. scientific simulations):
+- Network performance: use `--network host` or pass through an RDMA device.
+- Match the MPI library version between the container and the host MPI launcher.
+- For multi-node MPI, ensure the same container image is available on all nodes.
