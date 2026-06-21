@@ -14,8 +14,9 @@ on:
       - ".github/workflows/docker-hello-world-py-dynamic.yml"
   workflow_dispatch:
 
-env:
-  IMAGE_NAME: ghcr.io/${{ github.repository_owner }}/hello-world-py-dynamic
+concurrency:
+  group: docker-hello-world-py-dynamic-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build:
@@ -34,6 +35,11 @@ jobs:
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
+
+      - name: Compute image name (lowercased, nested under repo)
+        run: |
+          REPO_LC=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+          echo "IMAGE_NAME=ghcr.io/${REPO_LC}/hello-world-py-dynamic" >> "$GITHUB_ENV"
 
       - name: Log in to GitHub Container Registry
         if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
@@ -62,8 +68,8 @@ jobs:
           push: ${{ github.ref == 'refs/heads/main' && github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=hello-world-py-dynamic
+          cache-to: type=gha,mode=max,scope=hello-world-py-dynamic
 
       - name: Test - Output
         if: success()

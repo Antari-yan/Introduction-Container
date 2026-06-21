@@ -12,8 +12,9 @@ on:
       - ".github/workflows/docker-dns-utils.yml"
   workflow_dispatch:
 
-env:
-  IMAGE_NAME: ghcr.io/${{ github.repository_owner }}/dns-utils
+concurrency:
+  group: docker-dns-utils-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build:
@@ -32,6 +33,11 @@ jobs:
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
+
+      - name: Compute image name (lowercased, nested under repo)
+        run: |
+          REPO_LC=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+          echo "IMAGE_NAME=ghcr.io/${REPO_LC}/dns-utils" >> "$GITHUB_ENV"
 
       - name: Log in to GitHub Container Registry
         if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
@@ -60,8 +66,8 @@ jobs:
           push: ${{ github.ref == 'refs/heads/main' && github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=dns-utils
+          cache-to: type=gha,mode=max,scope=dns-utils
 
       - name: Test - dig & drill
         if: success()
