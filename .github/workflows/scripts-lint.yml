@@ -1,0 +1,58 @@
+name: Scripts - lint & syntax check
+
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - "scripts/**"
+      - ".github/workflows/scripts-lint.yml"
+  pull_request:
+    paths:
+      - "scripts/**"
+      - ".github/workflows/scripts-lint.yml"
+  workflow_dispatch:
+
+jobs:
+  shellcheck:
+    name: ShellCheck + bash -n
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Install ShellCheck
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends shellcheck
+
+      # bash -n: parse-only check (catches syntax errors without executing)
+      - name: bash syntax check (bash -n)
+        run: |
+          FAILED=0
+          while IFS= read -r -d '' script; do
+            echo "Checking syntax: $script"
+            bash -n "$script" || { echo "FAIL: $script"; FAILED=1; }
+          done < <(find scripts -name "*.bash" -o -name "*.sh" -print0)
+          exit $FAILED
+
+      # ShellCheck: static analysis for common shell scripting pitfalls.
+      # SC1091 (not following sourced files) is disabled since CI doesn't have the sourced files available.
+      - name: ShellCheck static analysis
+        run: |
+          FAILED=0
+          while IFS= read -r -d '' script; do
+            echo "ShellCheck: $script"
+            shellcheck \
+              --shell=bash \
+              --severity=warning \
+              --exclude=SC1091 \
+              "$script" || { echo "FAIL: $script"; FAILED=1; }
+          done < <(find scripts -name "*.bash" -o -name "*.sh" -print0)
+          exit $FAILED
+
+      - name: List checked scripts
+        if: always()
+        run: |
+          echo "Scripts in scripts/:"
+          find scripts -name "*.bash" -o -name "*.sh" | sort

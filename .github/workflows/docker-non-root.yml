@@ -1,0 +1,92 @@
+name: Docker - non-root (Go Alpine webapp)
+
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - "dockerfiles/Dockerfile.non-root"
+      - ".github/workflows/docker-non-root.yml"
+  pull_request:
+    paths:
+      - "dockerfiles/Dockerfile.non-root"
+      - ".github/workflows/docker-non-root.yml"
+  workflow_dispatch:
+
+env:
+  IMAGE_NAME: ghcr.io/${{ github.repository_owner }}/non-root-webapp
+
+jobs:
+  build:
+    name: Build${{ github.ref == 'refs/heads/main' && ' & Push' || '' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Set up QEMU (cross-platform emulation)
+        uses: docker/setup-qemu-action@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Log in to GitHub Container Registry
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@v6
+        with:
+          images: ${{ env.IMAGE_NAME }}
+          tags: |
+            type=sha,prefix=sha-
+            type=ref,event=branch
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+
+      - name: Build (and push on main)
+        uses: docker/build-push-action@v7
+        with:
+          context: dockerfiles
+          file: dockerfiles/Dockerfile.non-root
+          platforms: linux/amd64,linux/arm64
+          push: ${{ github.ref == 'refs/heads/main' && github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Test - HTTP response
+        if: success()
+        run: |
+          docker buildx build \
+            --platform linux/amd64 \
+            --file dockerfiles/Dockerfile.non-root \
+            --load \
+            --tag non-root-webapp:ci \
+            dockerfiles
+
+          docker run --rm -d --name non-root-ci -p 8080:8080 non-root-webapp:ci
+          sleep 2
+          RESPONSE=$(curl -sf http://localhost:8080)
+          docker stop non-root-ci
+          echo "Response: $RESPONSE"
+          echo "$RESPONSE" | grep -q "Hello, World!" || \
+            { echo "Unexpected response: $RESPONSE"; exit 1; }
+
+      - name: Verify process runs as non-root user
+        if: success()
+        run: |
+          docker run --rm -d --name non-root-uid-check non-root-webapp:ci
+          sleep 1
+          USER_ID=$(docker exec non-root-uid-check id -u)
+          docker stop non-root-uid-check
+          echo "Container UID: $USER_ID"
+          [ "$USER_ID" != "0" ] || { echo "ERROR: process is running as root!"; exit 1; }
