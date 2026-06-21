@@ -1,4 +1,4 @@
-FROM python:3.12-alpine
+FROM python:3.13-alpine
 
 RUN addgroup -S webgroup && adduser -S webuser -G webgroup
 

@@ -1,2 +1,2 @@
-gunicorn~=23.0
+gunicorn~=26.0
 valkey~=6.1
