@@ -1,5 +1,10 @@
 data/**/*
 !data/index.html
+!data/example-web-app/
+!data/example-web-app/**
+
+# generated on demand by the Podman section (helm template ... > data/webserver-k8s.yaml)
+data/webserver-k8s.yaml
 
 runc_container/**/*
 !runc_container/hello.c
