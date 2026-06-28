@@ -1,0 +1,39 @@
+# Creates a self-signed CA with cert-manager.
+---
+# Create a cluster wide issuer that can only create self-signed certificates.
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: selfsigned
+spec:
+  selfSigned: {}
+
+---
+# Create a self-signed root certificate for the CA.
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: root-ca
+  namespace: cert-manager
+spec:
+  isCA: true
+  commonName: introduction-root-ca
+  secretName: root-ca
+  duration: 87600h   # 10 years
+  renewBefore: 720h
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+  issuerRef:
+    name: selfsigned
+    kind: ClusterIssuer
+
+---
+# Create a Cluster wide issuer for creating certificates signed by the CA.
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: ca
+spec:
+  ca:
+    secretName: root-ca

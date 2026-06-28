@@ -1,0 +1,16 @@
+# Caps the namespace as a whole, so it cannot consume unbounded cluster resources.
+# With a quota on cpu/memory, every pod must declare requests/limits.
+# The LimitRange supplies defaults for workloads that do not set their own.
+---
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: example-web-app-quota
+  namespace: example-web-app
+spec:
+  hard:
+    requests.cpu: "1"
+    requests.memory: 1Gi
+    limits.cpu: "2"
+    limits.memory: 2Gi
+    pods: "20"

@@ -18,9 +18,9 @@ services:
         protocol: tcp
         mode: ingress
     environment:
-      FLASK_DEBUG: "true"
+      GREETING: "Hello from Docker Compose"
     healthcheck:
-      test: wget -q --spider http://127.0.0.1:8080
+      test: wget -q --spider http://127.0.0.1:8080/healthz
     logging: *logging
 
   valkey:
@@ -37,8 +37,9 @@ services:
     logging: *logging
 
 
-# # This is a small example in how to create a containerized Python application based on `flask` as micro web framework and `valkey` as in-memory storage.
-# docker build -t simple_python_web_app -f webapp-and-storage/Dockerfile ./webapp-and-storage
-# docker compose -f docker-compose.webapp-and-storage.yml up -d
+# # This is a small example in how to create a containerized Python application using a minimal WSGI app served by `gunicorn` and `valkey` as in-memory storage.
+# # Run it from the project root
+# docker build -t simple_python_web_app ./data/example-web-app
+# docker compose -f compose-files/docker-compose.webapp-and-storage.yml up -d
 # curl http://localhost:8080
-# docker compose -f docker-compose.webapp-and-storage.yml down
+# docker compose -f compose-files/docker-compose.webapp-and-storage.yml down

@@ -1,0 +1,62 @@
+# valkey runs as a StatefulSet: stable identity, ordered rollout and per-pod persistent storage.
+# The password comes from the same Secret the web app uses.
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: valkey
+  namespace: example-web-app
+  labels:
+    app: valkey
+spec:
+  serviceName: valkey
+  replicas: 1
+  selector:
+    matchLabels:
+      app: valkey
+  template:
+    metadata:
+      labels:
+        app: valkey
+    spec:
+      containers:
+        - name: valkey
+          image: docker.io/valkey/valkey:8-alpine
+          command: ["valkey-server"]
+          args:
+            - "--requirepass"
+            - "$(VALKEY_PASSWORD)"   # k8s substitutes the env var below
+            - "--dir"
+            - "/data"
+            - "--save"
+            - "60 1"
+          env:
+            - name: VALKEY_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: valkey-credentials
+                  key: password
+          ports:
+            - containerPort: 6379
+          livenessProbe:
+            tcpSocket:  # A plain port check doesn't need credentials
+              port: 6379
+          volumeMounts:
+            - name: data
+              mountPath: /data
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+              add:
+                - SETUID
+                - SETGID
+  volumeClaimTemplates: # Each replica gets its own PersistentVolumeClaim
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: local-path
+        resources:
+          requests:
+            storage: 128Mi

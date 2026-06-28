@@ -1,0 +1,16 @@
+# Virtual IP and DNS name "example-web-app" for the web pods.
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: example-web-app
+  namespace: example-web-app
+  labels:
+    app: example-web-app
+spec:
+  selector:
+    app: example-web-app
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080

@@ -1,0 +1,20 @@
+# An Argo CD Application for deploying application manifests from Git and keeps them synchronized.
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: example-web-app
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/Antari-yan/Introduction-Container.git
+    targetRevision: main
+    path: kubernetes-files
+  destination:
+    server: https://kubernetes.default.svc   # the cluster Argo CD runs in
+    namespace: example-web-app
+  syncPolicy:
+    automated:
+      prune: true      # remove resources that were deleted from Git
+      selfHeal: true   # revert manual cluster changes back to the Git state

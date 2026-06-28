@@ -1,0 +1,27 @@
+# Exposes the web app over HTTPS via Traefik.
+# cert-manager (ingress-shim) sees the annotation, issues the certificate from the "ca" ClusterIssuer and
+# stores it in the Secret named under tls.secretName.
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: example-web-app
+  namespace: example-web-app
+  annotations:
+    cert-manager.io/cluster-issuer: ca
+spec:
+  tls:
+    - hosts:
+        - example-web-app.k3d.localhost
+      secretName: example-web-app-tls   # Created and renewed by cert-manager
+  rules:
+    - host: example-web-app.k3d.localhost
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: example-web-app
+                port:
+                  number: 8080

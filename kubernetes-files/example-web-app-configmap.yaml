@@ -1,0 +1,11 @@
+# Non-confidential configuration for the web app, injected as environment variables.
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: example-web-app-config
+  namespace: example-web-app
+  labels:
+    app: example-web-app
+data:
+  GREETING: "Hello from Kubernetes"

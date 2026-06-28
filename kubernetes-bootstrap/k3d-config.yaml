@@ -1,0 +1,23 @@
+# Declarative configuration for a k3d cluster
+---
+apiVersion: k3d.io/v1alpha5
+kind: Simple
+metadata:
+  name: introduction
+servers: 1   # control-plane nodes
+agents: 2    # worker nodes
+ports:
+  - port: 8080:80 # host:loadbalancer -> forwarded to traefik (ingress) inside the cluster
+    nodeFilters:
+      - loadbalancer
+  - port: 8443:443
+    nodeFilters:
+      - loadbalancer
+options:
+  k3d:
+    wait: true  # Wait until the cluster is ready before returning
+  k3s:
+    nodeLabels:
+      - label: example=introduction
+        nodeFilters:
+          - server:*

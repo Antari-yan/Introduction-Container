@@ -1,0 +1,21 @@
+# Scales the web Deployment between 2 and 5 replicas based on CPU usage.
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: example-web-app
+  namespace: example-web-app
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: example-web-app
+  minReplicas: 2
+  maxReplicas: 5   # IMPORTANT: An upper bound prevents runaway scaling from exhausting cluster resources
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 50

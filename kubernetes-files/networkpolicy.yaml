@@ -1,0 +1,60 @@
+# Locks down pod-to-pod traffic for the application.
+# Once a pod is selected, anything not explicitly allowed is denied.
+---
+# Deny all incoming traffic in the namespace.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-ingress
+  namespace: example-web-app
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+
+---
+# Allow the web app on 8080 from the ingress controller (Traefik in kube-system) and from labelled clients (the jobs).
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-example-web-app
+  namespace: example-web-app
+spec:
+  podSelector:
+    matchLabels:
+      app: example-web-app
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+        - podSelector:
+            matchLabels:
+              access: example-web-app
+      ports:
+        - protocol: TCP
+          port: 8080
+
+---
+# Allow valkey on 6379 only from the web pods.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-valkey
+  namespace: example-web-app
+spec:
+  podSelector:
+    matchLabels:
+      app: valkey
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: example-web-app
+      ports:
+        - protocol: TCP
+          port: 6379

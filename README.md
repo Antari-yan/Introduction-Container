@@ -1,11 +1,19 @@
 # Introduction to Container
-The Container technology revolutionized in how to develop, run and manage software, from small applications to huge interconnected clustered applications (e.g. Web-App, Database, ...).  
+The Container technology revolutionized in how to develop, run and manage software, from small applications to
+huge interconnected clustered applications (e.g. Web-App, Database, ...).  
 All of that is made possible through flexible configuration, Container Images and a short starting time.
 
-This repository is intended as a short introduction into what containers are, how to run and manage them and the concept of packaging software and its dependencies into a single portable unit.  
-It also covers tools like [Podman](https://podman.io/) and [Docker](https://www.docker.com/), as well as touching on [Kubernetes](https://kubernetes.io/)(K8s).
+This repository is intended as a short introduction into what containers are, how to run and manage them and
+the concept of packaging software and its dependencies into a single portable unit.  
+It also covers tools like [Podman](https://podman.io/) and [Docker](https://www.docker.com/),
+as well as touching on [Kubernetes](https://kubernetes.io/)(K8s).
 
-Anywhere the commands for Podman and Docker overlap the variable `CR` will be used, an easy way to set it is with `CR=$(command -v podman || command -v docker)`, which selects either `podman` or `docker`, depending on what is installed.
+Anywhere the commands for Podman and Docker overlap the variable `CR` will be used,
+that should contain `podman` or `docker`, depending on what is installed:
+```sh
+CR=$(command -v podman || command -v docker)
+```
+
 
 ## Setup
 All examples are provided for `Podman` and the `Docker Engine`(Docker CE).  
@@ -44,13 +52,13 @@ systemctl --user enable --now podman.socket
 This is required for tools that speak the Docker socket API (e.g. some compose plugins or the `docker` CLI pointed at Podman).
 
 
-
-
 ## Motivation & Background of container
 ### Traditional deployment challenges
 Before containers were invented, developers and IT teams struggled with complex software deployment challenges.  
-Applications were tightly coupled with specific operating system configurations and software dependencies, which could lead to compatibility issues, dependency conflicts, and time-consuming setup processes.
-Phrases like `It works on my machine` weren't always just jokes and running multiple applications on the same system could lead to clashes between libraries or runtime environments (e.g., two applications requiring different versions of Python or Java).  
+Applications were tightly coupled with specific operating system configurations and software dependencies,
+which could lead to compatibility issues, dependency conflicts, and time-consuming setup processes.
+Phrases like `It works on my machine` weren't always just jokes and running multiple applications on the same system could lead to clashes between libraries or
+runtime environments (e.g., two applications requiring different versions of Python or Java).  
 Slight differences in operating system, dependencies, or configurations could lead to inconsistent or non-reproducible results.
 
 While virtual machines (VMs) are great to isolate environments they come with at a cost: each VM requires its own operating system, making them large and slow to boot.
@@ -91,7 +99,8 @@ Each type of namespace provides isolation for a specific system resource:
   - User namespace: Isolates user and group IDs, allowing a process to have different user IDs inside and outside the namespace.
   - Cgroup namespace: Isolates control group (cgroup) resources, which are used to manage resource allocation (CPU, memory, etc.).
 
-Namespaces are used to provide isolation for containers. Each container is placed in its own namespaces, giving the impression of a separate machine with its own processes, network interfaces, and file system.
+Namespaces are used to provide isolation for containers. Each container is placed in its own namespaces,
+giving the impression of a separate machine with its own processes, network interfaces, and file system.
 
 #### Linux Containers (LXC)
 - LXC (Linux Containers), introduced around 2008, was the first user-friendly toolset to manage the `namespace` kernel features.
@@ -101,7 +110,8 @@ Namespaces are used to provide isolation for containers. Each container is place
 #### Docker
 - Launched in 2013 by the `dotCloud` company (later renamed to `Docker, Inc.`), Docker popularized containers by making them easy to build, share, and run.
 - Initially utilized LXC and later switched to its own runtime (libcontainer, later runc).
-- Prior to Docker, Linux had features like cgroups and namespaces that enabled containers, but they were difficult to use. Docker wrapped these capabilities in a simple developer-friendly interface.
+- Prior to Docker, Linux had features like cgroups and namespaces that enabled containers, but they were difficult to use.  
+  Docker wrapped these capabilities in a simple developer-friendly interface.
 - Docker's key innovation was the `Docker Image` and `Dockerfile`, which streamlined the process of defining environments and distributing them via `Docker Hub`.
 - 2019 `Docker, Inc.` sold its enterprise business to `Mirantis`
 - Today, Docker still exists as the developer-facing tool, but its role in orchestration has been eclipsed by Kubernetes.
@@ -117,7 +127,8 @@ Namespaces are used to provide isolation for containers. Each container is place
 - Docker initially pushed `Docker Swarm` (launched in 2014) as its orchestration solution.
 - Swarm is simpler to use than Kubernetes, but lacked the capabilities, flexibility, and community backing of Kubernetes.
 - By 2017-2018, `Kubernetes` was more widely used, and `Docker Swarm` fell into minimal maintenance mode, but it is still available.
-- Because of the minimal maintenance there are many bugs and missing configuration options that are otherwise available for a Standalone Docker. (e.g., `depends_on`, `deploy.mode: replicated-job`, ...)
+- Because of the minimal maintenance there are many bugs and missing configuration options that are otherwise available for a standalone Docker
+  (e.g., `depends_on`, `deploy.mode: replicated-job`, ...).
 
 #### Kubernetes (k8s)
 - At `Google`, developers needed to manage containers at massive scale.
@@ -128,7 +139,8 @@ Namespaces are used to provide isolation for containers. Each container is place
   - Backing by the [Cloud Native Computing Foundation (CNCF)](https://www.cncf.io/).
   - Strong community support
 - Kubernetes effectively replaced Docker Swarm in most serious production environments.
-- The smallest manageable unit in Kubernetes is a `pod`, which is a group of one or more container (checkout [Sharing namespaces between Containers](#sharing-namespaces-between-containers) for how `pods` basically work)
+- The smallest manageable unit in Kubernetes is a `pod`, which is a group of one or more container
+  (checkout [Sharing namespaces between Containers](#sharing-namespaces-between-containers) for how `pods` work).
 
 #### The Open Container Initiative (OCI)
 - In 2015, with multiple runtimes and image formats emerging, the industry needed standardization.
@@ -146,7 +158,6 @@ Namespaces are used to provide isolation for containers. Each container is place
 - It's popular in enterprise and security-sensitive contexts and integrates tightly with `systemd`.
 - Also uses the concept of `pods` like Kubernetes
 
-
 #### Windows and Apple
 Both Windows and Apple have developed their own approaches for container and container runtime.
 
@@ -156,7 +167,6 @@ So far they one work with Azure and on Windows hosts.
 Apple has [container](https://github.com/apple/container), which is basically their own version of a container runtime for Mac, that uses virtual machines to run container.
 
 This repo won't go into detail of either, because they are more like niche products with highly specific restrictions to use them.
-
 
 
 ## What is a Container?
@@ -206,12 +216,18 @@ Most commonly used are:
   - [runc](https://github.com/opencontainers/runc)
     - A low-level container runtime that actually starts and runs containers, by directly interacting with the Linux kernel.
       - handling the low-level operations like namespace isolation, cgroups management, and file system mounts.
-        - Namespaces: Provide isolation for processes, networking, and file systems. runc uses Linux namespaces (such as PID, UTS, IPC, MNT, and NET) to ensure that containers are isolated from each other and from the host system.
-        - Cgroups (Control Groups): Manage resource allocation and limitation. runc leverages cgroups to control the amount of CPU, memory, I/O, and other resources that a container can use.
-        - Capabilities: Allow fine-grained control over what processes inside the container can do. runc sets Linux capabilities to restrict the privileges of containerized processes, enhancing security.
-        - Seccomp (Secure Computing Mode): Limits the system calls that a containerized process can execute, reducing the attack surface. runc applies seccomp profiles to containers, allowing only a subset of safe system calls.
-        - Filesystem Mounts: runc handles setting up the container's filesystem, including root filesystem and additional mounts (such as volumes or bind mounts) as defined in the container's configuration.
-      - doesn't include higher-level container management features like image distribution or networking orchestration, which are instead handled by higher-level tools like Docker or Kubernetes.
+        - Namespaces: Provide isolation for processes, networking, and file systems.
+          runc uses Linux namespaces (such as PID, UTS, IPC, MNT, and NET) to ensure that containers are isolated from each other and from the host system.
+        - Cgroups (Control Groups): Manage resource allocation and limitation.
+          runc leverages cgroups to control the amount of CPU, memory, I/O, and other resources that a container can use.
+        - Capabilities: Allow fine-grained control over what processes inside the container can do.
+          runc sets Linux capabilities to restrict the privileges of containerized processes, enhancing security.
+        - Seccomp (Secure Computing Mode): Limits the system calls that a containerized process can execute, reducing the attack surface.
+          runc applies seccomp profiles to containers, allowing only a subset of safe system calls.
+        - Filesystem Mounts: runc handles setting up the container's filesystem, including root filesystem and
+          additional mounts (such as volumes or bind mounts) as defined in the container's configuration.
+      - doesn't include higher-level container management features like image distribution or networking orchestration,
+        which are instead handled by higher-level tools like Docker or Kubernetes.
     - Originally developed in Go as part of Docker, later donated to the Open Container Initiative (OCI).
     - Implements the OCI runtime specification, ensuring interoperability across tools.
   - [containerd](https://github.com/containerd/containerd)
@@ -232,11 +248,14 @@ How it fits together:
 - Widely adopted in industry; most tutorials and documentation still use Docker commands.
 - Strong ecosystem: Docker Hub (public image registry), Docker Compose (multi-container applications).
 - The Docker Engine, is a client-server application that includes:
-  - Docker Daemon (`dockerd`): Runs in the background and manages Docker objects like containers, images, networks, and volumes. It listens for Docker API requests and is responsible for building, running, and distributing Docker containers.
-  - Docker Client (`docker`): A command-line interface (CLI) tool that allows users to interact with the Docker Daemon. When you type commands like docker run or docker build, the client sends these commands to the Docker Daemon, which then carries them out.
+  - Docker Daemon (`dockerd`): Runs in the background and manages Docker objects like containers, images, networks, and volumes.
+    It listens for Docker API requests and is responsible for building, running, and distributing Docker containers.
+  - Docker Client (`docker`): A command-line interface (CLI) tool that allows users to interact with the Docker Daemon.
+    When you type commands like docker run or docker build, the client sends these commands to the Docker Daemon, which then carries them out.
   - `Containerd`
   - `runc`
-  - Networking Components: Docker installs components to set up and manage container networks. This includes the Docker network bridge (docker0) and tools for setting up networking options like overlay networks for multi-host container networking.
+  - Networking Components: Docker installs components to set up and manage container networks.
+    This includes the Docker network bridge (docker0) and tools for setting up networking options like overlay networks for multi-host container networking.
   - Docker CLI Plugins: Additional command-line tools that extend the Docker CLI capabilities 
 
 Pros
@@ -550,11 +569,12 @@ While this is useful for any application that doesn't store any data, storing da
 
 To solve this, usually `bind mounts` and/or `named volumes` are used to persist data outside of the container.  
 
-When using the `run` command add `-v <source>:<target>` or `--volume <source>:<target>` to add files or directories into a container (this option can be used any number of times, as long as `<target>` is always different).  
+When using the `run` command add `-v <source>:<target>` or `--volume <source>:<target>` to add files or directories into a container
+(this option can be used any number of times, as long as `<target>` is always different).  
 `<source>` can be either a directory or file on the host system or a named volume.  
 `<target>` can be any directory or file in the container.  
 Missing directories an subdirectories will be created automatically.  
-Optionally `:ro`/`:rw` can be appended after target to make the directory or file either readonly or writable in the container.
+Optionally `:ro`/`:rw` can be appended after target to make the directory or file either readonly or writeable in the container.
 
 To create a named volume use `$CR volume create <volume-name>` and for removing `$CR volume rm <volume-name>`.
 
@@ -689,8 +709,10 @@ The default IP Address Ranges used to provide internal IPs to the containers are
   - Docker: `172.17.0.0/16`
 
 To make communication with container from the host possible, it is required to expose/map the desired ports in a container to ports on the host system.  
-For that the option `-p <host-port>:<container-port>` or `--publish <host-port>:<container-port>` can be used (this option can be used any number of times, as long as `<host-port>` is always different).  
-After making container ports available on the host, the host ports can be made accessible from beyond the host, by adding corresponding rules on the firewall/router.
+For that the option `-p <host-port>:<container-port>` or `--publish <host-port>:<container-port>` can be used
+(this option can be used any number of times, as long as `<host-port>` is always different).  
+After making container ports available on the host, the host ports can be made accessible from beyond the host,
+by adding corresponding rules on the firewall/router.
 
 > [!IMPORTANT]  
 > Podman is not running under root, so the host port has to be `>=1024`.  
@@ -707,7 +729,7 @@ After making container ports available on the host, the host ports can be made a
 > ```
 
 > [!IMPORTANT]  
-> If the IP Address Range of the container runtime overlapps with e.g. the company IP Address Range,
+> If the IP Address Range of the container runtime overlaps with e.g. the company IP Address Range,
 > it is possible to encounter unexpected networking issues.  
 > Therefore sometimes it is needed to overwrite the default IP Address Pool.  
 > For docker this can be done in the [daemon configuration](https://docs.docker.com/reference/cli/dockerd/#daemon-configuration-file).
@@ -824,7 +846,8 @@ $CR run --rm --add-host=myservice.localhost:host-gateway \
 
 
 ### Sharing namespaces between containers
-Sometimes it is needed for two containers to communicate with each other directly using the same network namespace, instead of using a virtual network ot other types of namespaces.  
+Sometimes it is needed for two containers to communicate with each other directly using the same network namespace,
+instead of using a virtual network ot other types of namespaces.  
 This is also known as running a `sidecar`, which can be useful for monitoring or configuring another container.  
 Or e.g. for debugging purpose to inspect network traffic with tools like [netshoot](https://github.com/nicolaka/netshoot).
 
@@ -867,12 +890,15 @@ Registries are Configured in the following files:
   - Docker:
     - `/etc/docker/daemon.json`
 
-The default `Container Registry` for Docker is [docker.io](https://hub.docker.com/) Podman has a set of predefined aliases which can be found in `/etc/containers/registries.conf.d/shortnames.conf`.  
+The default `Container Registry` for Docker is [docker.io](https://hub.docker.com/) Podman has a set of predefined aliases,
+which can be found in `/etc/containers/registries.conf.d/shortnames.conf`.  
 The most common Container Registries are:
   - [docker.io](https://hub.docker.com) ([usage and limits](https://docs.docker.com/docker-hub/usage))
   - [quay.io](https://quay.io) ([rate limited](https://access.redhat.com/solutions/6218921))
-  - `ghcr.io`  which is the Container Registry for GitHub Repositories, details can be found [here](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry)
-  - GitLab Repositories can have a Container Registry similar to GitHub, details can be found [here](https://docs.gitlab.com/user/packages/container_registry)
+  - `ghcr.io`  which is the Container Registry for GitHub Repositories,
+    details can be found [here](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry)
+  - GitLab Repositories can have a Container Registry similar to GitHub,
+    details can be found [here](https://docs.gitlab.com/user/packages/container_registry)
   - Self Hosted Registries like:
     - [CNCF Distribution Registry](https://github.com/distribution/distribution)
     - [Harbor](https://goharbor.io)
@@ -890,7 +916,8 @@ Sometimes a login is require into the desired `Container Registry` with `$CR log
 > Beware of the pull/rate limit of the publich container registries.  
 > To check the current limit for `DockerHub` checkout the [Get DockerHub pull rate limit](#get-dockerhub-pull-rate-limit) section.
 
-Shoutout to the [linuxserver](https://github.com/linuxserver) group for maintaining and providing many day-to-day applications as container images, via their own [lscr.io](https://docs.linuxserver.io/images-by-category/) registry.
+Shoutout to the [linuxserver](https://github.com/linuxserver) group for maintaining and providing many day-to-day applications as container images,
+via their own [lscr.io](https://docs.linuxserver.io/images-by-category/) registry.
 
 
 ### Example for a simple local Container Registry
@@ -1067,7 +1094,8 @@ $CR image pull alpine:3
 ```
 
 ### Inspecting a Container Image
-Inspect detailed information about a `Container Image`, like the digest, the OS and architecture it is build for, it's default configuration (env vars, start command, etc.), Labels, Annotations and more.
+Inspect detailed information about a `Container Image`, like the digest, the OS and architecture it is build for,
+it's default configuration (env vars, start command, etc.), Labels, Annotations and more.
 ```sh
 $CR image inspect alpine:3
 ```
@@ -1081,7 +1109,8 @@ Inspect the manifests of a `Container Image`:
 ```sh
 $CR manifest inspect alpine:3
 ```
-Like this Docker doesn't show the annotations and other details for each manifest, it only does so when either using `-v` or by specifically inspecting a manifest by using the `digest` instead of a `tag`.
+Like this Docker doesn't show the annotations and other details for each manifest.
+It only does so when either using `-v` or by specifically inspecting a manifest by using the `digest` instead of a `tag`.
 
 ### Managing local Container Images
 List all locally available `Container Images`:
@@ -1119,7 +1148,8 @@ $CR load --input alpine3.tar.gz
 ### Basics
 While there are many prebuilt images, most real-world projects need custom images.  
 The recipe for building an image is most commonly called a `Dockerfile`, which is also the default filename.  
-`Containerfile` is part of the [container-libs](https://github.com/containers/container-libs/tree/main) and uses the same syntax, it is what `podman` and it's buildkit `buildah` defaults to.  
+`Containerfile` is part of the [container-libs](https://github.com/containers/container-libs/tree/main) and uses the same syntax,
+it is what `podman` and it's buildkit `buildah` defaults to.  
 Docker hs it's own buildkit `buildx`.
 
 The reference fo both can be found here:
@@ -1383,12 +1413,14 @@ In a production environment the `DEBUG` log level should not be used/needed.
 The other log levels should only container necessary information and not create an information overload,
 so that they are easy check, filter and work with.  
 
-Using centralized logging and monitoring solutions like [Grafana](https://github.com/grafana/grafana) + [Prometheus](https://github.com/prometheus/prometheus) + [Loki](https://github.com/grafana/loki) is always helpful,
+Using centralized logging and monitoring solutions like
+[Grafana](https://github.com/grafana/grafana) + [Prometheus](https://github.com/prometheus/prometheus) + [Loki](https://github.com/grafana/loki) is always helpful,
 especially since container logs are not retained after a restart.
 
 
 #### Healthchecks
-While the `HEALTHCHECK` option in the Dockerfile/Containerfile is `docker` specific it is good to add some form of capability that allows running a healthcheck in the deployment configuration.  
+While the `HEALTHCHECK` option in the Dockerfile/Containerfile is `docker` specific it is good to
+add some form of capability that allows running a healthcheck in the deployment configuration.  
 For APIs this is quite simple when tools like `curl` or `wget` are available in the container.  
 For other types of applications it has to be implemented differently by adding options to e.g. trigger a function that checks if the application is still responding
 or something to check if the process is working.
@@ -1545,7 +1577,8 @@ There are tools like [trivy](https://github.com/aquasecurity/trivy) and [osv-sca
 
 #### Use annotations during build
 The [container image spec](https://github.com/opencontainers/image-spec) also specifies some `annotations` that are recommended to be added during the build process.  
-These include information like who build the image, where can the source code be found, etc., an overview can be found [here](https://github.com/opencontainers/image-spec/blob/main/annotations.md).
+These include information like who build the image, where can the source code be found, etc.,
+an overview can be found [here](https://github.com/opencontainers/image-spec/blob/main/annotations.md).
 
 They can be added during build with the `--annotation` option:
   - `--annotation <some-key>=<some-value>`
@@ -2024,17 +2057,17 @@ Kubernetes (k8s) is the de facto industry standard for orchestration.
     - Advanced networking, storage, and scaling
     - Operator for automated deployment and lifecycle managing
     - Huge ecosystem ([CNCF landscape](https://landscape.cncf.io))
-      - [HELM](https://helm.sh) to manage Kubernetes applications
-      - [ArtifactHUB](https://artifacthub.io) as central marketplace for `HELM` templates
+      - [Helm](https://github.com/helm/helm) to manage Kubernetes applications
+      - [ArtifactHUB](https://artifacthub.io) as central marketplace for `Helm` templates
       - [OperatorHub](https://operatorhub.io) as central marketplace for operator
 
 Lightweight distributions variants:
-  - [rke2](https://github.com/rancher/rke2) - Hardened single binary Kubernetes distribution from Rancher.
   - [k3s](https://github.com/k3s-io/k3s) - Minimal single binary Kubernetes, great for edge, IoT, CI and developement.
-  - [k3d](https://github.com/k3d-io/k3d) - Run k3s inside Docker, great for dev/test.
+  - [rke2](https://github.com/rancher/rke2) - Hardened k8s based single binary Kubernetes distribution.
+  - [k3d](https://github.com/k3d-io/k3d) - Run k3s inside Docker/Podman, great for development and testing.
 
 
-The modularity and extensiblity of Kubernetes adds a high level of komplexity to maintenace and developement.  
+The modularity and extensiblity of Kubernetes adds a high level of complexity to maintenace and developement.  
 With a 6 month lifecycle it would be foolish to do things manually.  
 There are many tools like the [System Upgrade Controller](https://github.com/rancher/system-upgrade-controller)
 that help automatizing things, but they also add complexity and need to be maintained.
@@ -2043,35 +2076,849 @@ The lightweight k8s distibutions take a way a lot of complexity,
 but it still requires a lot of preparation work to get a well functioning system with minimal maintenance overhead.
 
 
-#### Running with Podman
-While limited it is possible to run Kuberentes files and Helm charts with podman:
+#### Architecture
+A Kubernetes cluster consists of one or more `control plane` nodes and one or more `worker` nodes.  
+The `control plane` makes the global decisions, the `worker` nodes run the actual workloads.
 
-Create a kuebrentes file form Helm template:
-```sh
-helm template webserver ./helm-files > ./data/webserver-k8s.yaml
-```
+Control plane components:
+  - `kube-apiserver`: The front end of the cluster, every interaction (e.g. `kubectl`) goes through this API.
+  - `etcd`: A key-value store holding the complete cluster state and.
+  - `kube-scheduler`: Decides on which node a new `pod` should run.
+  - `kube-controller-manager`: Runs controllers that reconcile the actual state towards the desired state.
 
-Run the deployment:
-```sh
-podman kube play --replace data/webserver-k8s.yaml
-```
+Worker node components:
+  - `kubelet`: The agent on each node that starts and supervises `pods`.
+  - `kube-proxy`: Maintains the network rules for `Service` communication.
+  - `container runtime`: The OCI runtime (e.g. `containerd`) that actually runs the container.
 
-Check state:
-```sh
-podman pod ps
-podman ps
-```
+> [!NOTE]  
+> Kubernetes only talks to a `container runtime` via the [Container Runtime Interface (CRI)](https://kubernetes.io/docs/concepts/architecture/cri/).  
+> Docker itself is not CRI compliant, which is why support for it (`dockershim`) was removed in `v1.24`.  
+> `k3s` (and therefore `k3d`) uses `containerd` internally regardless of whether the host uses Docker or Podman.
 
-Stop the deployment:
+While it is technically possible to run a `control plane` only cluster
+(by removing/ignoring the default `NoSchedule` taint so that workloads run on the control plane nodes), it is not recommended.  
+A misbehaving workload can starve control plane components like `etcd` and `kube-apiserver` and
+degrade the whole cluster, and it runs right next to the most sensitive data (`etcd`, certificates, credentials).  
+`k3s` is an exception that schedules on its server nodes by default, which suits its lightweight and local use case.  
+Valid exceptions are local or test clusters and dedicated management clusters
+(see [Managing many clusters and GitOps](#managing-many-clusters-and-gitops)) that only run trusted tooling, never tenant workloads.
+
+#### Kubernetes Objects
+Everything in Kubernetes is a declarative object stored in the `etcd`, described in `YAML` Manifests and applied to the cluster.  
+The most common ones are:
+  - `Pod`: The smallest deployable unit, a group of one or more container sharing network and storage
+    (see [Sharing namespaces between Containers](#sharing-namespaces-between-containers)).
+  - `ReplicaSet`: Keeps a defined number of identical `pods` running.
+  - `Deployment`: Manages `ReplicaSets` and enables rolling updates and rollbacks (the usual way to run stateless applications).
+  - `StatefulSet`: Like a `Deployment` but with stable network identities and storage (e.g. for databases).
+  - `DaemonSet`: Runs one `pod` on every (or selected) node (e.g. for log collectors).
+  - `Job`/`CronJob`: Run a `pod` to completion, once or on a schedule.
+  - `Service`: A stable virtual IP and DNS name load balancing across a set of `pods`.
+  - `Ingress`: Routes external HTTP(S) traffic to `Services`.
+  - `ConfigMap`/`Secret`: Provide configuration and credentials to `pods`.
+  - `Namespace`: Mechanism for isolating groups of resources within a single cluster (e.g. Deployments, Services, etc.).
+    Names of resources need to be unique within a namespace, but not across namespaces.
+    There are some exceptions of objects that are available cluster-wide (e.g. StorageClass, Nodes, PersistentVolumes, etc.).
+  - `PersistentVolume`(PV)/`PersistentVolumeClaim`(PVC): Storage (`volume`) definitions (like amount and access mode) for statefull applications.
+
+> [!NOTE]  
+> Beyond the built-in objects, Kubernetes can be extended with `Custom Resource Definitions (CRDs)`.  
+> `CRDs` are often used together with so called `Operator` (a controller acting on a CRD) which enable complex applications like databases to be managed automatically (from deployment management to upgrading to backup/restore).
+
+#### Setup k3d
+[k3d](https://github.com/k3d-io/k3d/) is a small wrapper that runs `k3s` inside container.  
+It uses the already available Docker or can be pointed at Podman, which makes it ideal for development, testing and CI.
+
+A `k3d` cluster is just a set of container:
+  - one `serverlb` container (a [Traefik](https://github.com/traefik/traefik) based loadbalancer that forwards mapped host ports into the cluster)
+  - one container per `server` (control plane) node
+  - one container per `agent` (worker) node
+
+##### Installing k3d
 ```sh
-podman kube play --down data/webserver-k8s.yaml
+curl -s https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | bash
+# Pin a version with: curl -s https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | TAG=v5.8.3 bash
+k3d version
 ```
 
 > [!NOTE]  
-> Older Podman Version (like 3.4.4) use different commands:
->   - `podman play kube data/webserver-k8s.yaml`
->   - `podman pod stop webserver-pod-0`
->   - `podman pod rm webserver-pod-0`
+> `k3s` does not ship a plain Kubernetes, it bundles a set of components that are otherwise installed separately into a single binary:
+>   - `CoreDNS` for in-cluster DNS
+>   - `Traefik` as the `Ingress` controller
+>   - `ServiceLB` (klipper) to implement `Service` type `LoadBalancer`
+>   - `local-path` provisioner as the default `StorageClass`
+>   - `metrics-server` for `kubectl top`
+
+##### Running k3d with Podman
+`k3d` uses the Docker API, but Podman provides a compatible socket, so it can be used as the runtime instead.
+
+Enable the Podman socket and point `k3d` at it:
+```sh
+systemctl --user enable --now podman.socket
+ln -s /run/podman/podman.sock /var/run/docker.sock
+export DOCKER_HOST=unix://$XDG_RUNTIME_DIR/podman/podman.sock
+k3d cluster create introduction --port "8080:80@loadbalancer"
+```
+
+> [!IMPORTANT]  
+> Podman support in `k3d` is officially experimental.  
+> Podman has no default `bridge` network, so for a local registry use `--default-network podman` and avoid `--registry-create`.  
+> Details: <https://k3d.io/stable/usage/advanced/podman/>
+
+##### Creating a cluster
+Set the `CR` variable depending on what is installed, so the underlying container can be inspected:
+  - Podman: `CR=podman`
+  - Docker: `CR=docker`
+
+Create a cluster with 1 server, 2 agents and the loadbalancer mapping host port `8080` to port `80` inside the cluster, from a config file:
+```sh
+k3d cluster create --config kubernetes-bootstrap/k3d-config.yaml
+
+# k3d cluster create introduction \
+#   --servers 1 \
+#   --agents 2 \
+#   --port "8080:80@loadbalancer" \
+#   --port "8443:443@loadbalancer"
+```
+
+Look at the container that make up the cluster:
+```sh
+$CR container ls --filter name=k3d-introduction
+```
+
+Manage the cluster lifecycle:
+```sh
+k3d cluster list
+k3d cluster stop introduction   # stops the container, keeps all data
+k3d cluster start introduction  # resumes where it left off
+# k3d cluster delete introduction  # removes the cluster and its data
+```
+
+> [!NOTE]  
+> Creating a cluster also writes a context named `k3d-introduction` into `~/.kube/config` and switches to it.  
+> List and switch contexts with:
+>   - `kubectl config get-contexts`
+>   - `kubectl config use-context k3d-introduction`
+
+To interact with the set the `KUBECONFIG` env var pointing to the file created by `k3s`:
+```sh
+export KUBECONFIG=~/.kube/config
+```
+
+#### kubectl
+[kubectl](https://github.com/kubernetes/kubectl) is the most commonly used CLI tool for interacting with kubernetes cluster (comparable the `podman` and `docker` CLIs):
+```sh
+# Ensure the installed kubectl version is compatible with the used kubernetes versionb
+curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
+
+sudo sh -c "kubectl completion bash > /etc/bash_completion.d/kubectl-completion"
+source /etc/bash_completion.d/kubectl-completion
+
+kubectl version --client
+
+export KUBECONFIG=~/.kube/config
+kubectl get nodes
+```
+
+| Description | kubectl | Podman/Docker equivalent |
+| --- | --- | --- |
+| Cluster/host info | `kubectl cluster-info` | `$CR system info` |
+| List nodes | `kubectl get nodes` | (single host) |
+| List workloads | `kubectl get pods` | `$CR container ls` |
+| Detailed info | `kubectl describe <object> <name>` | `$CR container inspect <name>` |
+| Logs | `kubectl logs <pod>` | `$CR container logs <name>` |
+| Exec into it | `kubectl exec -it <pod> -- /bin/sh` | `$CR container exec -it <name> /bin/sh` |
+| Apply a definition | `kubectl apply -f <file>` | `$CR compose up -d` |
+| Remove a definition | `kubectl delete -f <file>` | `$CR compose down` |
+
+Useful flags that work on most commands:
+```sh
+kubectl get pods -o wide          # more columns (node, IP, ...)
+kubectl get pods -o yaml          # full object as YAML
+kubectl get all                   # all common objects in the namespace
+kubectl get pods --watch          # stream changes
+kubectl get pods -A               # All pods in all namespaces
+kubectl get pods -n <namespace>   # All pods in a specific namespaces
+```
+
+
+#### Deploying applications
+A comparable application deployment to the [compose example](compose-files/docker-compose.webapp-and-storage.yml)
+can be found in the [kubernetes-files](kubernetes-files) directory:
+  - A python web frontend [simple_python_web_app](kubernetes-files/example-web-app-deployment.yaml)
+  - A [valkey](kubernetes-files/valkey-statefulset.yaml) key-value store backed
+  - All individual pieces required for configuration, networking, access control, autoscaling, etc.
+
+Since the image is built locally and not in a container registry, it needs to be imported into the cluster (the nodes have their own image store):
+```sh
+$CR build -t simple_python_web_app ./data/example-web-app
+k3d image import simple_python_web_app:latest -c introduction
+```
+
+Create the `Namespace` and switch the current context to it, so the following commands do not need `-n example-web-app`:
+```sh
+kubectl apply -f kubernetes-files/example-web-app-namespace.yaml
+kubectl config set-context --current --namespace=example-web-app
+```
+
+The web app and valkey share a password from a `Secret`, which is created out-of-band so it never lands in Git:
+```sh
+echo "$(openssl rand -base64 24)" > data/valkey-password
+kubectl create secret generic valkey-credentials --from-file=password=data/valkey-password
+```
+
+Deploy the whole application with a single command:
+```sh
+kubectl apply -f kubernetes-files/
+```
+
+This creates everything at once: the `example-web-app` `Deployment` (managed via a `ReplicaSet`),
+the `valkey` `StatefulSet`, their `Services`, a `ConfigMap`, an `Ingress`, a `HorizontalPodAutoscaler`, RBAC, `NetworkPolicies` and two `Jobs`.  
+Each of these will be explained in their own sections below.
+
+Watch it come up and reach it through a port-forward:
+```sh
+kubectl get pods
+kubectl rollout status deployment/example-web-app
+
+kubectl port-forward svc/example-web-app 8081:8080
+# In another shell:
+curl http://localhost:8081
+# <h1>Hello from Kubernetes</h1> ... viewed N times.
+```
+
+> [!NOTE]  
+> Access through the `Ingress` over HTTPS is wired up later once [cert-manager](#self-signed-certificates-with-cert-manager) is installed.  
+> A `port-forward` works immediately for testing and is independent of `Ingress` and `NetworkPolicies`.
+
+Inspect and debug a `pod` like a standalone container:
+```sh
+POD=$(kubectl get pods -l app=example-web-app -o jsonpath='{.items[0].metadata.name}')
+kubectl logs $POD
+kubectl exec -it $POD -- /bin/sh
+```
+
+#### Health probes
+Kubernetes uses probes to know whether a container is started, healthy and ready:
+  - `startupProbe`: Has a slow-starting container finished booting? It holds off the other probes until it passes.
+  - `livenessProbe`: Is the container still working? On failure it is restarted (recovers from deadlocks).
+  - `readinessProbe`: Is the container ready to serve? On failure the `pod` is removed from `Service` endpoints (no traffic), but not restarted.
+
+Each probe can check via `httpGet`, `tcpSocket` or `exec`.  
+The web app ([example-web-app-deployment.yaml](kubernetes-files/example-web-app-deployment.yaml)) uses an HTTP `livenessProbe` on `/healthz` (process is up) and
+an HTTP `readinessProbe` on `/readyz` (which only succeeds when `valkey` is reachable), so traffic is only sent once the dependency is available.  
+The `valkey` `StatefulSet` uses a `tcpSocket` `livenessProbe`.
+
+#### Resource requests and limits
+Each container can declare how much CPU and memory it needs, which drives scheduling and stability (and is required for the [HPA](#autoscaling)).
+  - `requests`: The guaranteed amount, used by the scheduler to place the `pod`. The sum of requests cannot exceed a node's capacity.
+  - `limits`: The hard ceiling. Exceeding the memory limit gets the container `OOMKilled`, exceeding the CPU limit throttles it.
+
+The web app sets them:
+```yaml
+    resources:
+      requests:
+        cpu: 25m       # 25 millicores = 0.025 of a CPU core
+        memory: 32Mi
+      limits:
+        cpu: 100m
+        memory: 64Mi
+```
+
+The ratio of requests to limits determines the `pod`'s `Quality of Service` class, which decides what gets evicted first when a node runs out of memory:
+  - `Guaranteed`: requests equal limits for every container. Evicted last.
+  - `Burstable`: requests set but lower than limits (the example above). Evicted in between.
+  - `BestEffort`: nothing set. Evicted first.
+
+> [!IMPORTANT]  
+> Always set memory `requests` and `limits`.  
+> A `pod` without limits can consume a whole node and trigger `OOMKills` of other workloads, the same starvation problem behind [why workloads stay off the control plane](#architecture).
+
+#### Services and Networking
+Each `pod` gets its own IP, but `pods` are ephemeral and their IPs change on every restart.  
+A `Service` provides a stable virtual IP and a DNS name in front of a set of `pods` (selected by labels).  
+
+Different `Service` types can be used:
+  - `ClusterIP` (default): Only reachable inside the cluster.
+  - `NodePort`: Exposes the `Service` on a port on every node.
+  - `LoadBalancer`: Requests an external IP, in `k3s` implemented by `ServiceLB`.
+  - [Ingress](kubernetes-files/example-web-app-ingress.yaml) is not a `Service` type, it is a separate object routing HTTP(S) by host/path to `ClusterIP` `Services`.
+
+In-cluster DNS always follows the pattern `<service>.<namespace>.svc.cluster.local`.  
+Inside the same namespace the short `<service>` name can also be used.
+
+Resolve the `Service` names from a temporary `pod` (DNS works regardless of `NetworkPolicies`):
+```sh
+# kubernetes-files/example-web-app-service.yaml
+kubectl run tmp --rm -it --image=busybox --restart=Never -- nslookup example-web-app.example-web-app.svc.cluster.local
+
+# kubernetes-files/valkey-service.yaml
+kubectl run tmp --rm -it --image=busybox --restart=Never -- nslookup valkey.example-web-app.svc.cluster.local
+```
+
+##### Gateway API
+The [Gateway API](https://github.com/kubernetes-sigs/gateway-api) is the successor to `Ingress` and increasingly the preferred way to expose HTTP(S).  
+Its core resources reached `v1` (GA), but it does not deprecate `Ingress`, both will coexist for a while.
+
+It splits the single `Ingress` object into role-oriented resources:
+  - `GatewayClass`: Which controller implements it (provided by the infrastructure, e.g. Traefik).
+  - `Gateway`: The entry points (ports, protocols, TLS), owned by the cluster operator.
+  - `HTTPRoute`: The routing rules (host, path, headers, traffic splitting), owned by the app team.
+
+Compared to `Ingress` it natively supports what previously needed controller-specific annotations,
+like header-based routing, traffic splitting (e.g. canary releases) and routes across namespaces.  
+It is also portable across implementations (Traefik, Cilium, Envoy/Istio, NGINX, ...).
+
+[example-web-app-gateway.yaml](kubernetes-files/example-web-app-gateway.yaml) expresses the same routing as the `Ingress`, on its own host so the two run side by side.
+
+The Gateway API CRDs ship with `k3s`, but the Traefik Gateway provider is off by default and needs to be enabled:
+```sh
+kubectl apply -f kubernetes-bootstrap/traefik-gateway-config.yaml
+kubectl -n kube-system rollout status deployment/traefik   # wait for Traefik to re-roll with the new config
+kubectl get gatewayclass                                    # "traefik" now exists
+kubectl get gateway,httproute -n example-web-app            # the Gateway is now accepted
+curl http://example-web-app-gateway.k3d.localhost:8080
+```
+
+##### Network policies
+By default every `pod` can talk to every `pod` in any namespace.  
+This can be restricted with a `NetworkPolicy`, so that once a `pod` is selected by any policy, all traffic that is not explicitly allowed is denied.
+
+[networkpolicy.yaml](kubernetes-files/networkpolicy.yaml) denies all ingress, then allows exactly what the app needs:  
+  - `example-web-app` reachable on 8080 from the ingress controller and from `pods` labeled `access=example-web-app`
+  - `valkey` reachable on 6379 only from the `example-web-app` `pods`
+
+To verify it:
+```sh
+# allowed (carries the label) -> returns the page
+kubectl run client-allowed --rm -it --labels=access=example-web-app --image=busybox --restart=Never -- wget -qO- --timeout=5 http://example-web-app:8080
+
+# denied (no label) -> connection refused
+kubectl run client-denied --rm -it --image=busybox --restart=Never -- wget -qO- --timeout=5 http://example-web-app:8080
+```
+
+#### ConfigMaps and Secrets
+A ConfigMap` holds non-confidential configuration, a `Secret` holds sensitive data (only `base64` encoded, not encrypted).  
+Both can be injected as environment variables or mounted as files.
+
+The web app reads its `GREETING` from [example-web-app-configmap.yaml](kubernetes-files/example-web-app-configmap.yaml) (injected with `envFrom`) and
+its `VALKEY_PASSWORD` from the `valkey-credentials` `Secret` (injected with `secretKeyRef`).
+
+Change the greeting and roll it out:
+```sh
+kubectl edit configmap example-web-app-config       # change the GREETING value
+kubectl rollout restart deployment/example-web-app  # pods pick up the new value on restart
+curl http://localhost:8080                          # (with the port-forward running)
+```
+
+A `Secret` is created the same way the `valkey-credentials` one was during the application deployment:
+```sh
+# From files
+echo "$(openssl rand -base64 24)" > data/valkey-password
+kubectl create secret generic valkey-credentials --from-file=password=data/valkey-password
+
+# Or from literals
+kubectl create secret generic valkey-credentials --from-literal=password="$(openssl rand -base64 24)"
+```
+
+> [!IMPORTANT]  
+> `--from-file` keeps the file content verbatim, including a trailing newline, which sometimes can lead to failing authentication.  
+
+> [!NOTE]  
+> A `Secret` is stored `base64` encoded, not encrypted, so some additional steps can be useful:
+>   - Enable [encryption at rest](https://kubernetes.io/docs/tasks/administer-cluster/encrypt-data/) on the cluster (a one-time cluster setting).
+>   - Use the [External Secrets Operator](https://github.com/external-secrets/external-secrets) to pull secrets from an external store like [HashiCorp Vault](https://github.com/hashicorp/vault).
+
+#### Storage
+A `PersistentVolumeClaim` (PVC) requests storage without caring where it comes from.  
+A `StorageClass` provisions a matching `PersistentVolume` (PV) automatically, in `k3s` the [local-path](https://github.com/rancher/local-path-provisioner) provisioner is available by default.  
+
+The valkey example runs as a `StatefulSet` ([valkey-statefulset.yaml](kubernetes-files/valkey-statefulset.yaml)) with a `volumeClaimTemplate`, so each replica gets its own PVC and persists its data to it:
+```sh
+kubectl get pvc
+kubectl get pv
+```
+
+The data survives a restart of the `pod`:
+```sh
+# Create an entry in valkey, delete the pod than get the entry
+kubectl exec valkey-0 -- sh -c 'valkey-cli -a "$VALKEY_PASSWORD" --no-auth-warning set demo persisted >/dev/null'
+kubectl delete pod valkey-0
+kubectl wait --for=condition=ready pod valkey-0 --timeout=60s
+kubectl exec valkey-0 -- sh -c 'valkey-cli -a "$VALKEY_PASSWORD" --no-auth-warning get demo'
+```
+
+> [!IMPORTANT]  
+> The `local-path` provisioner stores data on a single node, just like a `named volume` in [Docker Swarm](#docker-swarm-data-persistence).  
+> If a `pod` is rescheduled to a different node the data does not follow.  
+> For multi-node persistence use network storage (`NFS`, `S3`) or a cluster-aware `StorageClass` (e.g. [Longhorn](https://longhorn.io)).
+
+##### Container Storage Interface (CSI)
+The `Container Storage Interface (CSI)` is the standard that lets storage backends plug into Kubernetes.  
+
+A CSI driver runs as `pods` in the cluster and consists of:
+  - a `controller plugin` that handles volume lifecycle (create, delete, snapshot, ...)
+  - a `node plugin` (a `DaemonSet`) that mounts the volumes on each node
+  - it registers a provisioner name (e.g. `nfs.csi.k8s.io`) that a `StorageClass` then references
+
+The `local-path` provisioner above is one such driver, real backends use their own, e.g.:
+  - cloud block storage: `ebs.csi.aws.com`, `pd.csi.storage.gke.io`, `disk.csi.azure.com`
+  - cross-node `ReadWriteMany`: [csi-driver-nfs](https://github.com/kubernetes-csi/csi-driver-nfs), [Rook/Ceph](https://rook.io), [Longhorn](https://longhorn.io)
+
+As an example the [NFS CSI driver](https://github.com/kubernetes-csi/csi-driver-nfs) solves the multi-node limitation,
+because an NFS share can be mounted by `pods` on any node (`ReadWriteMany`).  
+Install the driver (pin to a current [release](https://github.com/kubernetes-csi/csi-driver-nfs/releases)):
+```sh
+helm repo add csi-driver-nfs https://raw.githubusercontent.com/kubernetes-csi/csi-driver-nfs/master/charts
+helm repo update
+helm install csi-driver-nfs csi-driver-nfs/csi-driver-nfs --namespace kube-system --version v4.11.0
+kubectl wait pod --selector app.kubernetes.io/name=csi-driver-nfs --for condition=ready -n kube-system
+```
+
+Create a `StorageClass` pointing at the NFS server (`nfsvers` should match the server, see the [runtime NFS examples](#nfs-mount-example)):
+```yaml
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: nfs-csi
+provisioner: nfs.csi.k8s.io
+parameters:
+  server: <nfs-server-ip>
+  share: <path-to-nfs-share>
+reclaimPolicy: Delete
+volumeBindingMode: Immediate
+mountOptions:
+  - hard
+  - nfsvers=4.1
+```
+
+A `PVC` then provisions a volume dynamically by just naming the class, no manual `PV` needed:
+```yaml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: shared-data
+spec:
+  accessModes:
+    - ReadWriteMany   # multiple pods across nodes can mount it
+  storageClassName: nfs-csi
+  resources:
+    requests:
+      storage: 1Gi
+```
+
+> [!NOTE]  
+> The NFS driver only connects to an existing NFS server, it does not run one.  
+> The nodes need an NFS client (e.g. `nfs-common`) installed and network access to the server.
+
+
+#### Self-healing and Autoscaling
+The self-healing mechanisim in kuberentes ensures that the desired state matches with the real state (if possible):
+```sh
+# Delete a pods and see that it automatically is recreated
+kubectl delete pod $(kubectl get pods -l app=example-web-app -o jsonpath='{.items[0].metadata.name}')
+kubectl get pods -l app=example-web-app --watch
+```
+
+Kubernetes can scale automatically on three levels:
+  - `HorizontalPodAutoscaler` (HPA): Adds or removes `pod` replicas based on metrics (CPU, memory or custom). Built in, relies on `metrics-server` (bundled in `k3s`).
+  - `VerticalPodAutoscaler` (VPA): Adjusts a `pod`'s CPU/memory requests and limits to match actual usage. Installed separately.
+  - `Cluster Autoscaler` / [Karpenter](https://github.com/kubernetes-sigs/karpenter): Adds or removes whole nodes when `pods` cannot be scheduled or nodes sit idle. Depends on the infrastructure.
+
+The web app already has an HPA ([example-web-app-hpa.yaml](kubernetes-files/example-web-app-hpa.yaml), 2-5 replicas at 50% CPU):
+```sh
+kubectl get hpa example-web-app
+```
+
+Verify its function by generating load and watching it scale up:
+```sh
+# Start a load generator that hammers the Service with many parallel requests
+kubectl run load --image=busybox --restart=Never --labels=access=example-web-app -- /bin/sh -c \
+  'i=0; while [ $i -lt 30 ]; do (while true; do wget -q -O /dev/null http://example-web-app:8080/healthz; done) & i=$((i+1)); done; wait'
+
+# Watch the replica count climb towards maxReplicas as the CPU target is exceeded
+kubectl get hpa example-web-app --watch
+
+kubectl get deployments.apps example-web-app
+```
+
+Stop the load again and the HPA scales back down after its stabilization window (5 minutes by default):
+```sh
+kubectl delete pod load
+```
+
+> [!IMPORTANT]  
+> Always set a sensible `maxReplicas`.  
+> Without an upper bound a traffic spike (or a runaway client) can scale a workload until it exhausts the cluster's resources and starves everything else.
+
+> [!NOTE]  
+> Because the HPA manages the replica count, the `example-web-app` `Deployment` deliberately omits the `replicas` field.  
+> Setting both would let a re-apply fight the HPA, the HPA's `minReplicas` takes over that role.
+
+> [!NOTE]  
+> HPA and VPA should not manage the same metric (e.g. CPU) on the same workload, as they would work against each other.
+
+#### Rolling updates and rollbacks
+A `Deployment` updates `pods` gradually, keeping the application available during the change.
+
+Change the image and follow the rollout:
+```sh
+kubectl set image deployment/example-web-app example-web-app=simple_python_web_app:v2
+kubectl rollout status deployment/example-web-app
+kubectl rollout history deployment/example-web-app
+```
+
+If something breaks, roll back to the previous revision:
+```sh
+kubectl rollout undo deployment/example-web-app
+```
+
+#### Namespaces
+`Namespaces` group and isolate objects, e.g. per project or environment (the whole application above lives in `example-web-app`).  
+`Services` in different namespaces are reachable via their full DNS name `<service>.<namespace>.svc.cluster.local`.
+
+```sh
+kubectl create namespace demo
+kubectl create deployment demo --image=docker.io/nginx:1-alpine -n demo
+kubectl get pods -n demo
+
+# Switch the default namespace of the current context
+kubectl config set-context --current --namespace=demo
+
+# Clean up and switch back to the application namespace
+kubectl delete namespace demo
+kubectl config set-context --current --namespace=example-web-app
+```
+
+> [!NOTE]  
+> Deleting a `Namespace` deletes everything inside it, which is the quickest way to tear down the whole application.
+
+##### LimitRange and ResourceQuota
+Two namespaced objects keep a single `Namespace` from consuming everything (useful when several teams or environments share a cluster):
+  - [LimitRange]((kubernetes-files/example-web-app-limitrange.yaml)): Per-container defaults and bounds. Containers without `requests`/`limits` get the defaults, and values outside the allowed min/max are rejected.
+  - [ResourceQuota](kubernetes-files/example-web-app-resourcequota.yaml): A cap on the namespace as a whole, e.g. total CPU/memory requested and limited, or the number of objects of a kind.
+```sh
+kubectl describe resourcequota -n example-web-app
+kubectl describe limitrange -n example-web-app
+ 
+# valkey and the Jobs declare no resources of their own, so they receive the LimitRange defaults
+kubectl get pod valkey-0 -n example-web-app -o jsonpath='{.spec.containers[0].resources}'; echo
+```
+ 
+> [!IMPORTANT]  
+> Once a `ResourceQuota` constrains CPU/memory, every `pod` in the namespace must declare the matching `requests`/`limits` or it is rejected.  
+> A `LimitRange` with defaults satisfies this automatically for workloads that do not set their own, which is why the two are usually deployed together.
+
+#### RBAC and ServiceAccounts
+`Role Based Access Control (RBAC)` decides who may do what.  
+Permissions are additive (deny by default) and granted by binding a `Role` to an identity:
+  - `Role` / `ClusterRole`: A set of permissions (verbs on resources). `Role` is namespaced, `ClusterRole` is cluster-wide.
+  - `RoleBinding` / `ClusterRoleBinding`: Grants a `Role`/`ClusterRole` to a subject (a user, group or `ServiceAccount`).
+  - `ServiceAccount`: The identity a `pod` runs as. If none is set, the namespace's `default` `ServiceAccount` is used.
+
+The web app runs under a dedicated `ServiceAccount` with read-only access to `pods` ([example-web-app-rbac.yaml](kubernetes-files/example-web-app-rbac.yaml)),
+which its `/pods` endpoint uses to call the Kubernetes API:
+```sh
+# The app lists its own namespace's pods through the API, using its ServiceAccount
+kubectl exec deploy/example-web-app -- wget -qO- http://localhost:8080/pods
+
+# The same permissions checked directly with "auth can-i"
+kubectl auth can-i list pods   --as=system:serviceaccount:example-web-app:example-web-app # yes
+kubectl auth can-i delete pods --as=system:serviceaccount:example-web-app:example-web-app # no
+```
+
+> [!IMPORTANT]  
+> Give each workload its own `ServiceAccount` with the least privileges it needs, never the `default` one with broad rights.  
+> Set `automountServiceAccountToken: false` on `pods` that do not talk to the Kubernetes API, so a compromised container cannot use the token.
+
+#### Other workload types
+Besides `Deployments` and `StatefulSet`, Kubernetes has controllers for other workload shapes:
+  - `Job`: Runs `pods` until a task completes successfully (batch work).
+  - `CronJob`: Creates `Jobs` on a schedule.
+  - `DaemonSet`: Runs one `pod` on every (or selected) node, e.g. for log or metrics agents.
+
+[jobs.yaml](kubernetes-files/jobs.yaml) contains a one-off `Job` that tests the running app and a `CronJob` that hits it every five minutes:
+```sh
+kubectl get jobs
+kubectl logs job/example-web-app-test
+
+kubectl get cronjob example-web-app-heartbeat
+
+kubectl create job --from=cronjob/example-web-app-heartbeat heartbeat-now # trigger the CronJob manually
+kubectl logs jobs/heartbeat-now
+```
+
+#### Helm
+[Helm](https://github.com/helm/helm) is an additional commonly used tool that serves as Kubernetes Package Manager.
+```sh
+curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-4 | bash
+
+sudo sh -c "helm completion bash > /etc/bash_completion.d/helm-completion"
+source /etc/bash_completion.d/helm-completion
+
+helm version
+
+export KUBECONFIG=~/.kube/config
+helm list -A
+```
+
+A package or `Helm Chart` bundles templated kubernetes manifests with `values` to fill in variables, comparable to a `.env` file for a compose deployment.  
+A chart is a directory with a fixed layout:
+```
+mychart/
+  Chart.yaml          # metadata: name, version (the chart's own), appVersion (the app it installs)
+  values.yaml         # default values, the user-facing configuration surface
+  templates/          # the templated manifests, rendered into Kubernetes objects
+    deployment.yaml
+    service.yaml
+    _helpers.tpl      # reusable named template snippets (filenames starting with _ are not rendered as objects)
+    NOTES.txt         # usage hint printed after install
+  charts/             # vendored subchart dependencies (e.g. a database the app needs)
+  .helmignore         # files to exclude when packaging
+```
+Templates are [Go templates](https://pkg.go.dev/text/template). Values and built-in objects are referenced with `{{ ... }}`:
+  - `{{ .Values.x }}`: a value from `values.yaml` (or an override), the main mechanism for configuration.
+  - `{{ .Release.Name }}` / `{{ .Release.Namespace }}`: the name/namespace chosen at install time.
+  - `{{ .Chart.Name }}` / `{{ .Chart.Version }}`: data from `Chart.yaml`.
+  - functions and pipelines like `{{ .Values.name | default "web" | quote }}`, plus `if`/`range` for conditionals and loops.
+
+A minimal chart can be found in [helm-files](helm-files).  
+Its [templates/deployment.yaml](helm-files/templates/deployment.yaml) pulls the image, replica count and name from [values.yaml](helm-files/values.yaml) via `{{ .Values.* }}` and
+uses `{{ .Release.Name }}` for the object name.
+
+Render the templates locally to see what would be applied (no cluster needed), optionally overriding values:
+```sh
+helm template webserver ./helm-files
+helm template webserver ./helm-files --set replicaCount=3 # override a single value
+helm template webserver ./helm-files -f my-values.yaml    # override with a values file
+```
+
+Install, upgrade and remove a release (a release is one installed instance of a chart):
+```sh
+helm install webserver ./helm-files
+helm list
+kubectl get pods -l app=webserver
+
+helm upgrade webserver ./helm-files --set replicaCount=3  # change values on an existing release
+helm uninstall webserver
+```
+
+Inspect an installed release (Helm stores its state as a `Secret` in the cluster):
+```sh
+helm status webserver        # status and the rendered NOTES.txt
+helm get values webserver    # the values this release was installed with
+helm get manifest webserver  # the manifests Helm actually applied
+helm history webserver       # revision history (helm rollback webserver <revision> to revert)
+```
+
+> [!NOTE]  
+> The chart sets a `hostPort`, which in `k3d` binds the port on the node container, not on the host.  
+> To reach it use `kubectl port-forward deployment/webserver 8081:80` or add a `Service`/`Ingress` as explained later.
+
+Additionally it is possible to create `HelmChartConfig` objects (`k3s`/`rke2` specific) for providing additional overwrite values.  
+An example used later can be found in [kubernetes-bootstrap/traefik-gateway-config.yaml](kubernetes-bootstrap/traefik-gateway-config.yaml).
+
+
+##### Installing charts from a repository or an OCI registry
+Charts are usually not built locally but pulled from a remote source.  
+Historically this was a `Helm repository` (an HTTP server with an `index.yaml`).  
+Since `Helm 3.8` charts can also be stored as `OCI artifacts` in the same registries that hold container images,
+which is increasingly the default way to distribute them (unified auth, signing and storage, no separate index).
+
+As a ready-made example [podinfo](https://github.com/stefanprodan/podinfo) is used, a small web application made for Kubernetes demos.
+
+From a classic `Helm repository`:
+```sh
+helm repo add podinfo https://stefanprodan.github.io/podinfo
+helm repo update                       # refresh the cached index of all added repos
+helm repo list                         # list the configured repositories
+helm search repo podinfo               # list charts in the added repos matching "podinfo"
+helm search repo podinfo/ --versions   # all available versions of the chart
+helm install podinfo podinfo/podinfo --version 6.14.0
+```
+
+From an `OCI registry` (no `helm repo add` needed, the URL points straight at the chart):
+```sh
+helm install podinfo oci://ghcr.io/stefanprodan/charts/podinfo --version 6.14.0
+```
+
+Inspect a remote chart before installing, and check available values:
+```sh
+helm show chart oci://ghcr.io/stefanprodan/charts/podinfo --version 6.14.0
+helm show values oci://ghcr.io/stefanprodan/charts/podinfo --version 6.14.0
+```
+
+Reach the app and remove it again:
+```sh
+kubectl port-forward deployment/podinfo 9898:9898
+# In another shell: curl http://localhost:9898
+helm uninstall podinfo
+```
+
+> [!IMPORTANT]  
+> Pin the chart version with `--version` for the same reasons as [pinning image versions](#version-pinning).  
+> ArtifactHUB shows the current version: <https://artifacthub.io/packages/helm/podinfo/podinfo>
+
+> [!TIP]  
+> Charts in an `OCI registry` can be signed and verified, just like container images.  
+> The podinfo charts are signed with `cosign`, see the [signing section](#sign-the-container-images) for the concept:  
+> `cosign verify ghcr.io/stefanprodan/charts/podinfo:6.14.0 --certificate-oidc-issuer=https://token.actions.githubusercontent.com --certificate-identity-regexp='^https://github.com/stefanprodan/.*$'`
+
+
+#### Operators and Custom Resources
+A `CustomResourceDefinition (CRD)` adds a new object type to the Kubernetes API (the [Gateway API](#gateway-api) above is an example).  
+An `Operator` is a custom controller watching such objects.  
+It encodes the operational knowledge a human operator would otherwise apply (deploy, configure, back up, upgrade, fail over)
+into the same reconcile-to-desired-state loop the built-in controllers use.
+
+This is how complex and stateful applications are run on Kubernetes, e.g.:
+  - [cert-manager](https://github.com/cert-manager/cert-manager): Issues and renews TLS certificates from a `Certificate` object.
+  - [Prometheus Operator](https://github.com/prometheus-operator/prometheus-operator): Runs monitoring from `Prometheus` and `ServiceMonitor` objects.
+  - [CloudNativePG](https://github.com/cloudnative-pg/cloudnative-pg): Runs and manages `PostgreSQL cluster`.
+
+Operators are usually installed with Helm or the [Operator Lifecycle Manager (OLM)](https://github.com/operator-framework/operator-lifecycle-manager), [OperatorHub](https://operatorhub.io) lists available ones.  
+The workflow is always the same: install the operator, then declare a high-level object and let it reconcile reality to match.  
+
+##### Self-signed certificates with cert-manager
+[cert-manager](https://github.com/cert-manager/cert-manager) is an operator that issues and automatically renews TLS certificates from `Certificate` objects.  
+It supports public certificates via [ACME]((https://cert-manager.io/docs/configuration/acme/)) (e.g. Let's Encrypt) and internal ones via a self-signed CA.
+
+Install cert-manager with its CRDs (also available via `OCI` at `oci://quay.io/jetstack/charts/cert-manager`):
+```sh
+helm repo add jetstack https://charts.jetstack.io
+helm repo update
+helm install cert-manager jetstack/cert-manager \
+  --namespace cert-manager --create-namespace \
+  --set crds.enabled=true
+kubectl wait --for=condition=available deployment --all -n cert-manager --timeout=120s
+```
+
+Create a self-signed CA and Cluster Issuer from [kubernetes-bootstrap/cert-manager-issuers.yaml](kubernetes-bootstrap/cert-manager-issuers.yaml):
+```sh
+kubectl apply -f kubernetes-bootstrap/cert-manager-issuers.yaml
+kubectl get clusterissuer
+```
+
+The web app's `Ingress` already requests its certificate by annotation, t.  
+The most common way to use cert-manager is by using the `cert-manager.io/cluster-issuer` annotation, which lets cert-manager's `ingress-shim` create and
+renew the `Certificate` automatically from the `Ingress` `tls` block:
+```yaml
+metadata:
+  annotations:
+    cert-manager.io/cluster-issuer: ca  # ingress-shim issues the cert for the tls hosts
+spec:
+  tls:
+    - hosts:
+        - example-web-app.k3d.localhost
+      secretName: example-web-app-tls   # cert-manager fills this Secret
+```
+
+With cert-manager now installed, the certificate the `Ingress` requested is issued on its own:
+```sh
+kubectl get certificate
+kubectl get secret example-web-app-tls
+
+# Reach the app over HTTPS through the Ingress, verifying against the CA
+kubectl get secret root-ca -n cert-manager -o jsonpath='{.data.tls\.crt}' | base64 -d > data/root-ca.crt
+curl --cacert data/root-ca.crt --resolve example-web-app.k3d.localhost:8443:127.0.0.1 https://example-web-app.k3d.localhost:8443
+```
+
+#### Managing many clusters and GitOps
+A major strength of Kubernetes over plain Docker is that its declarative API scales to whole fleets of clusters and applications, managed the same way as any other object.
+
+Cluster lifecycle (provisioning and managing the clusters themselves):
+  - [Cluster API (CAPI)](https://github.com/kubernetes-sigs/cluster-api): Manages clusters as Kubernetes objects (`Cluster`, `Machine`, ...) from a central management cluster,
+    provisioning downstream clusters on many infrastructures.  
+    It is itself a set of operators.
+    And through [`ClusterResourceSet`](https://cluster-api.sigs.k8s.io/tasks/experimental-features/cluster-resource-set) objects it is possible to
+    automatically apply a set of manifests (selected by cluster labels) to newly created clusters, e.g. to install a CNI or base add-ons so a fresh cluster comes up ready to use.
+
+GitOps (Git as the single source of truth, an agent continuously reconciles the cluster to match the repository):
+  - [Fleet](https://fleet.rancher.io)
+  - [Argo CD](https://github.com/argoproj/argo-cd)
+  - [Flux CD](https://github.com/fluxcd/flux2)
+
+> [!NOTE]  
+> It is possible to also manage Cluster via GitOps for a fully automated infrastructure management.
+
+
+##### GitOps with Argo CD
+Install Argo CD (`--server-side` is required because the CRDs are large):
+```sh
+kubectl create namespace argocd
+kubectl apply -n argocd --server-side --force-conflicts \
+  -f https://raw.githubusercontent.com/argoproj/argo-cd/v3.4.4/manifests/install.yaml
+kubectl wait --for=condition=available deployment --all -n argocd --timeout=180s
+```
+
+Point it at this repository with [kubernetes-bootstrap/argocd-application.yaml](kubernetes-bootstrap/argocd-application.yaml).  
+It syncs the top level of the `kubernetes-files` directory from the `main` branch into the `example-web-app` namespace,
+so Argo CD deploys the entire application and keeps it in sync with Git on its own:
+```sh
+kubectl apply -f kubernetes-bootstrap/argocd-application.yaml
+kubectl get application -n argocd example-web-app   # SYNC STATUS becomes Synced, HEALTH Healthy
+kubectl get pods -n example-web-app                 # example-web-app and valkey, now reconciled by Argo CD
+```
+
+Because the sync policy is automated with `selfHeal`, manual drift is reverted to the Git state:
+```sh
+kubectl delete service example-web-app -n example-web-app
+# Argo CD notices the drift and recreates the Service from Git
+kubectl get service example-web-app -n example-web-app --watch
+```
+
+Open the UI (the initial admin password is stored in a `Secret`):
+```sh
+kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath='{.data.password}' | base64 -d
+kubectl port-forward svc/argocd-server -n argocd 8444:443
+# Open https://localhost:8444 and log in as "admin"
+```
+
+> [!NOTE]  
+> Argo CD only manages what is in Git, e.g. the `valkey-credentials` `Secret` is created outside Git,
+> so a different approach like using the [External Secrets Operator](https://github.com/external-secrets/external-secrets would be recommended.
+
+#### Cleanup
+Remove the application, the add-ons and the cluster:
+```sh
+# Stop GitOps reconciliation first, so Argo CD does not recreate what is deleted next
+kubectl delete -f kubernetes-bootstrap/argocd-application.yaml --ignore-not-found
+
+# The whole application lives in one namespace, deleting it removes everything (incl. the Secret)
+kubectl delete namespace example-web-app --ignore-not-found
+
+# cluster-scoped cert-manager issuers and the Traefik Gateway override
+kubectl delete -f kubernetes-bootstrap/cert-manager-issuers.yaml --ignore-not-found
+kubectl delete -f kubernetes-bootstrap/traefik-gateway-config.yaml --ignore-not-found
+helm uninstall cert-manager -n cert-manager
+kubectl delete namespace argocd cert-manager --ignore-not-found
+
+# reset the context namespace and delete the cluster
+kubectl config set-context --current --namespace=default
+k3d cluster delete introduction
+```
+
+#### Additional Tools an Resources
+Kubernetes is a small core with a large ecosystem built on top of its API.  
+A few notable, production-grade tools worth knowing about (all extend the same declarative model shown above):
+  - [Rancher](https://github.com/rancher/rancher): A management platform witha web UI to provision, centrally manage and secure many clusters and deployments from one place.  
+    [Harvester](https://github.com/rancher/harvester-cloud) can be used as hyperconverged infrastructure counterpart, running VMs and Kubernetes on bare metal.
+  - [Longhorn](https://github.com/longhorn/longhorn): Distributed, replicated block storage that solves the single-node limitation of `local-path` without an external SAN.
+  - [Linkerd](https://github.com/linkerd/linkerd2) / [Istio](https://github.com/istio/istio):
+    Service meshes that add mTLS, retries, traffic splitting and detailed telemetry between services, transparently e.g. via sidecars.
+  - [KubeVirt](https://github.com/kubevirt/kubevirt): Runs traditional virtual machines as Kubernetes objects, side by side with containers, which can be useful for workloads that cannot be containerized.
+  - [Kubespray](https://github.com/kubernetes-sigs/kubespray) / [kubeadm](https://github.com/kubernetes/kubeadm):
+    Tooling for provision Kubernetes clusters on a host.
+  - [Prometheus](https://github.com/prometheus/prometheus) and [Grafana](https://github.com/grafana/grafana): The common stack for metrics and dashboards.
+  - [Velero](https://github.com/velero-io/velero): Backup and restore (and migration) of cluster resources and persistent volumes.
+  - [External Secrets Operator](https://github.com/external-secrets/external-secrets): Syncs `Secrets` from an external store (HashiCorp Vault, AWS/GCP/Azure secret managers, ...) into a cluster.
+  - [Kyverno](https://github.com/kyverno/kyverno) / [OPA Gatekeeper](https://github.com/open-policy-agent/gatekeeper):
+    Policy engines to validate and enforce rules on objects (admission control), e.g. "every image must come from our registry".
+
+> [!NOTE]  
+> The [CNCF Landscape](https://landscape.cncf.io) catalogs the much larger set of cloud-native projects by category.  
 
 
 ## General Best practices
@@ -2191,7 +3038,8 @@ here is an example for `Docker` to use the hosts `systemd-resolved`:
 
 ## Misc
 Some additional noteworthy things:
-  - [The Twelve-Factor Manifesto](https://github.com/twelve-factor/twelve-factor) - examples and guidelines for shedding outdated concepts and focusing on core application design for cloud deployment
+  - [The Twelve-Factor Manifesto](https://github.com/twelve-factor/twelve-factor) - examples and guidelines for shedding outdated concepts and
+    focusing on core application design for cloud deployment
   - [sysbox](https://github.com/nestybox/sysbox) empowers rootless containers to run workloads such as Systemd, Docker, Kubernetes, just like VMs.
 
 
@@ -2302,3 +3150,35 @@ Containers can be used for MPI workloads (e.g. scientific simulations):
 - Network performance: use `--network host` or pass through an RDMA device.
 - Match the MPI library version between the container and the host MPI launcher.
 - For multi-node MPI, ensure the same container image is available on all nodes.
+
+
+### Running kubernetes manifests directly with Podman
+Podman is capable of running plain Kubernetes manifests and Helm charts directly via `podman kube play`.  
+>While limited (no `Deployments` scaling, `Services`, `Ingress`, ...) it can still be useful for testing a manifest quickly.
+
+Create a manifest from the Helm template:
+```sh
+helm template webserver ./helm-files > ./data/webserver-k8s.yaml
+```
+
+Run the deployment:
+```sh
+podman kube play --replace data/webserver-k8s.yaml
+```
+
+Check state:
+```sh
+podman pod ps
+podman ps
+```
+
+Stop the deployment:
+```sh
+podman kube play --down data/webserver-k8s.yaml
+```
+
+> [!NOTE]  
+> Older Podman Version (like 3.4.4) use different commands:
+>   - `podman play kube data/webserver-k8s.yaml`
+>   - `podman pod stop webserver-pod-0`
+>   - `podman pod rm webserver-pod-0`

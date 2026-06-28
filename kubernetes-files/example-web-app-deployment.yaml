@@ -1,0 +1,59 @@
+# The stateless web frontend.
+# "replicas" is omitted here, because it is managed by the HorizontalPodAutoscaler.
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: example-web-app
+  namespace: example-web-app
+  labels:
+    app: example-web-app
+spec:
+  # replicas: 3
+  selector:
+    matchLabels:
+      app: example-web-app
+  template:
+    metadata:
+      labels:
+        app: example-web-app
+    spec:
+      serviceAccountName: example-web-app   # Identity for the /pods endpoint
+      containers:
+        - name: example-web-app
+          image: simple_python_web_app:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: example-web-app-config
+          env:
+            - name: VALKEY_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: valkey-credentials
+                  key: password
+          readinessProbe:
+            httpGet:
+              path: /readyz # Only ready when valkey is reachable
+              port: 8080
+            initialDelaySeconds: 2
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /healthz  # Only checks if the process is running
+              port: 8080
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 25m
+              memory: 32Mi
+            limits:
+              cpu: 100m
+              memory: 64Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL

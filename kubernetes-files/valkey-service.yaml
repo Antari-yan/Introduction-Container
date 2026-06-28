@@ -1,0 +1,17 @@
+# Headless Service (clusterIP: None) for the StatefulSet, for providing a stable per-pod DNS:
+# valkey-0.valkey, valkey-1.valkey, ...
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: valkey
+  namespace: example-web-app
+  labels:
+    app: valkey
+spec:
+  clusterIP: None
+  selector:
+    app: valkey
+  ports:
+    - port: 6379
+      targetPort: 6379
