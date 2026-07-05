@@ -1,0 +1,119 @@
+site_name: Introduction to Container
+site_url: https://antari-yan.github.io/Introduction-Container/
+repo_url: https://github.com/Antari-yan/Introduction-Container
+repo_name: Antari-yan/Introduction-Container
+
+theme:
+  name: material
+  palette:
+    - scheme: slate
+      primary: custom
+      accent: custom
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+    - scheme: default
+      primary: custom
+      accent: custom
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - navigation.footer
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+    - content.code.annotate
+
+extra_css:
+  - stylesheets/extra.css
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - tables
+  - toc:
+      permalink: true
+
+nav:
+  - Home:
+    - Overview: index.md
+    - "Motivation & Background": motivation-and-background.md
+    - "What is a Container?": what-is-a-container.md
+    - container-runtime: container-runtime.md
+  - Fundamentals:
+    - Setup: fundamentals/setup.md
+    - Basic commands: fundamentals/basic-commands.md
+    - Advanced Commands: fundamentals/advanced-commands.md
+    - Running and interacting with container: fundamentals/running-and-interacting-with-container.md
+    - Data persistence: fundamentals/data-persistence.md
+    - Networking: fundamentals/networking.md
+    - Sharing namespaces between containers: fundamentals/sharing-namespaces-between-containers.md
+  - Container Images:
+    - Overview: container-images/overview.md
+    - Container Image Specification: container-images/container-image-specification.md
+    - Pulling a Container Image: container-images/pulling-a-container-image.md
+    - Inspecting a Container Image: container-images/inspecting-a-container-image.md
+    - Managing local Container Images: container-images/managing-local-container-images.md
+  - Container Registries:
+    - Overview: container-registries/overview.md
+    - Example for a simple local Container Registry: container-registries/example-for-a-simple-local-container-registry.md
+  - Container Image building:
+    - Basics: container-image-building/basics.md
+    - Muli-arch Container Images: container-image-building/muli-arch-container-images.md
+    - Recommendations: container-image-building/recommendations.md
+  - Compose files:
+    - Overview: compose-files/overview.md
+    - Networking: compose-files/networking.md
+    - Recommendations: compose-files/recommendations.md
+  - Docker Swarm:
+    - Overview: docker-swarm/overview.md
+    - Logging: docker-swarm/logging.md
+    - Docker Swarm data persistence: docker-swarm/docker-swarm-data-persistence.md
+    - Docker Swarm Networking: docker-swarm/docker-swarm-networking.md
+  - Kubernetes:
+    - Overview: kubernetes/overview.md
+    - Architecture: kubernetes/architecture.md
+    - Kubernetes Objects: kubernetes/kubernetes-objects.md
+    - Setup k3d: kubernetes/setup-k3d.md
+    - kubectl: kubernetes/kubectl.md
+    - Deploying applications: kubernetes/deploying-applications.md
+    - Health probes: kubernetes/health-probes.md
+    - Resource requests and limits: kubernetes/resource-requests-and-limits.md
+    - Services and Networking: kubernetes/services-and-networking.md
+    - ConfigMaps and Secrets: kubernetes/configmaps-and-secrets.md
+    - Storage: kubernetes/storage.md
+    - Self-healing and Autoscaling: kubernetes/self-healing-and-autoscaling.md
+    - Rolling updates and rollbacks: kubernetes/rolling-updates-and-rollbacks.md
+    - Namespaces: kubernetes/namespaces.md
+    - RBAC and ServiceAccounts: kubernetes/rbac-and-serviceaccounts.md
+    - Other workload types: kubernetes/other-workload-types.md
+    - Helm: kubernetes/helm.md
+    - Operators and Custom Resources: kubernetes/operators-and-custom-resources.md
+    - Managing many clusters and GitOps: kubernetes/managing-many-clusters-and-gitops.md
+    - Cleanup: kubernetes/cleanup.md
+    - Additional Tools and Resources: kubernetes/additional-tools-and-resources.md
+  - Best practices:
+    - Overview: best-practices/overview.md
+    - Validating the Docker daemon configuration: best-practices/validating-the-docker-daemon-configuration.md
+    - File descriptor limits: best-practices/file-descriptor-limits.md
+    - inotify resource limits: best-practices/inotify-resource-limits.md
+    - Cache DNS responses for outgoing connections: best-practices/cache-dns-responses-for-outgoing-connections.md
+  - Misc:
+    - Overview: misc/overview.md
+    - Docker placeholder templates: misc/docker-placeholder-templates.md
+    - Get DockerHub pull rate limit: misc/get-dockerhub-pull-rate-limit.md
+    - Running a container with runc: misc/running-a-container-with-runc.md
+    - Change Docker/Pdoman container runtime: misc/change-docker-and-pdoman-container-runtime.md
+    - Parallel computing (MPI / OpenMP): misc/parallel-computing-mpi-and-openmp.md
+    - Running kubernetes manifests directly with Podman: misc/running-kubernetes-manifests-directly-with-podman.md
