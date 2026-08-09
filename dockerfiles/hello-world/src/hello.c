@@ -212,6 +212,7 @@
 #endif
 
 int main(void) {
+    printf("\nC Container\n");
     printf(LABEL_FMT "%s - %s\n", "Compiled for:", BUILD_OS, BUILD_ARCH);
 
     /* NOTE:
