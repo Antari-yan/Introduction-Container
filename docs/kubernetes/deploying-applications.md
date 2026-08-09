@@ -1,19 +1,19 @@
 # Deploying applications
 A comparable application deployment to the [compose example](../../compose-files/docker-compose.webapp-and-storage.yml)
-can be found in the [kubernetes-files](../../kubernetes-files) directory:
-  - A python web frontend [simple_python_web_app](../../kubernetes-files/example-web-app-deployment.yaml)
-  - A [valkey](../../kubernetes-files/valkey-statefulset.yaml) key-value store backed
+can be found in the [kubernetes/manifest](../../kubernetes/manifests) directory:
+  - A python web frontend [example-web-app](../../kubernetes/manifests/example-web-app-deployment.yaml)
+  - A [valkey](../../kubernetes/manifests/valkey-statefulset.yaml) key-value store backed
   - All individual pieces required for configuration, networking, access control, autoscaling, etc.
 
 Since the image is built locally and not in a container registry, it needs to be imported into the cluster (the nodes have their own image store):
 ```sh
-$CR build -t simple_python_web_app ./data/example-web-app
-k3d image import simple_python_web_app:latest -c introduction
+$CR build -t example-web-app ./data/example-web-app
+k3d image import example-web-app:latest -c introduction
 ```
 
 Create the `Namespace` and switch the current context to it, so the following commands do not need `-n example-web-app`:
 ```sh
-kubectl apply -f kubernetes-files/example-web-app-namespace.yaml
+kubectl apply -f kubernetes/manifests/example-web-app-namespace.yaml
 kubectl config set-context --current --namespace=example-web-app
 ```
 
@@ -25,7 +25,7 @@ kubectl create secret generic valkey-credentials --from-file=password=data/valke
 
 Deploy the whole application with a single command:
 ```sh
-kubectl apply -f kubernetes-files/
+kubectl apply -f kubernetes/manifests/
 ```
 
 This creates everything at once: the `example-web-app` `Deployment` (managed via a `ReplicaSet`),

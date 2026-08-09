@@ -26,9 +26,9 @@ helm install cert-manager jetstack/cert-manager \
 kubectl wait --for=condition=available deployment --all -n cert-manager --timeout=120s
 ```
 
-Create a self-signed CA and Cluster Issuer from [kubernetes-bootstrap/cert-manager-issuers.yaml](../../kubernetes-bootstrap/cert-manager-issuers.yaml):
+Create a self-signed CA and Cluster Issuer from [kubernetes/bootstrap/cert-manager-issuers.yaml](../../kubernetes/bootstrap/cert-manager-issuers.yaml):
 ```sh
-kubectl apply -f kubernetes-bootstrap/cert-manager-issuers.yaml
+kubectl apply -f kubernetes/bootstrap/cert-manager-issuers.yaml
 kubectl get clusterissuer
 ```
 

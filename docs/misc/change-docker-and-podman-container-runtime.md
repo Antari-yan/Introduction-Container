@@ -1,4 +1,4 @@
-# Change Docker/Pdoman container runtime
+# Change Docker/Podman container runtime
 It is possible to change the container runtime used in `Docker` and `Podman`.
 
 Here is an example to use [crun](https://github.com/containers/crun/):

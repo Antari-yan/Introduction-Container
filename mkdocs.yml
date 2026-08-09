@@ -114,6 +114,6 @@ nav:
     - Docker placeholder templates: misc/docker-placeholder-templates.md
     - Get DockerHub pull rate limit: misc/get-dockerhub-pull-rate-limit.md
     - Running a container with runc: misc/running-a-container-with-runc.md
-    - Change Docker/Pdoman container runtime: misc/change-docker-and-pdoman-container-runtime.md
-    - Parallel computing (MPI / OpenMP): misc/parallel-computing-mpi-and-openmp.md
+    - Change Docker/Podman container runtime: misc/change-docker-and-podman-container-runtime.md
+    - Parallel computing (MPI / OpenMP): misc/parallel-computing.md
     - Running kubernetes manifests directly with Podman: misc/running-kubernetes-manifests-directly-with-podman.md

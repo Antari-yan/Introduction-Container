@@ -4,7 +4,7 @@ Besides `Deployments` and `StatefulSet`, Kubernetes has controllers for other wo
   - `CronJob`: Creates `Jobs` on a schedule.
   - `DaemonSet`: Runs one `pod` on every (or selected) node, e.g. for log or metrics agents.
 
-[jobs.yaml](../../kubernetes-files/jobs.yaml) contains a one-off `Job` that tests the running app and a `CronJob` that hits it every five minutes:
+[jobs.yaml](../../kubernetes/manifests/jobs.yaml) contains a one-off `Job` that tests the running app and a `CronJob` that hits it every five minutes:
 ```sh
 kubectl get jobs
 kubectl logs job/example-web-app-test

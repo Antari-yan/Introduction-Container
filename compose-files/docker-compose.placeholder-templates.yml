@@ -8,9 +8,9 @@ services:
         condition: none
       labels:
         service.label: "this is a label on the service"
-      placement:
-        constraints:
-          - "node.hostname == ict-services-test-3"
+      # placement:
+      #   constraints:
+      #     - "node.hostname == <hostname>"
     entrypoint: ["/bin/sh","-c"]
     command:
       - |

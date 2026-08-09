@@ -66,7 +66,7 @@ helm history webserver       # revision history (helm rollback webserver <revisi
 > To reach it use `kubectl port-forward deployment/webserver 8081:80` or add a `Service`/`Ingress` as explained later.
 
 Additionally it is possible to create `HelmChartConfig` objects (`k3s`/`rke2` specific) for providing additional overwrite values.  
-An example used later can be found in [kubernetes-bootstrap/traefik-gateway-config.yaml](../../kubernetes-bootstrap/traefik-gateway-config.yaml).
+An example used later can be found in [kubernetes/bootstrap/traefik-gateway-config.yaml](../../kubernetes/bootstrap/traefik-gateway-config.yaml).
 
 
 ### Installing charts from a repository or an OCI registry

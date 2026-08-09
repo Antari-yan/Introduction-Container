@@ -5,7 +5,7 @@ Permissions are additive (deny by default) and granted by binding a `Role` to an
   - `RoleBinding` / `ClusterRoleBinding`: Grants a `Role`/`ClusterRole` to a subject (a user, group or `ServiceAccount`).
   - `ServiceAccount`: The identity a `pod` runs as. If none is set, the namespace's `default` `ServiceAccount` is used.
 
-The web app runs under a dedicated `ServiceAccount` with read-only access to `pods` ([example-web-app-rbac.yaml](../../kubernetes-files/example-web-app-rbac.yaml)),
+The web app runs under a dedicated `ServiceAccount` with read-only access to `pods` ([example-web-app-rbac.yaml](../../kubernetes/manifests/example-web-app-rbac.yaml)),
 which its `/pods` endpoint uses to call the Kubernetes API:
 ```sh
 # The app lists its own namespace's pods through the API, using its ServiceAccount

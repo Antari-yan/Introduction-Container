@@ -21,7 +21,7 @@ spec:
       serviceAccountName: example-web-app   # Identity for the /pods endpoint
       containers:
         - name: example-web-app
-          image: simple_python_web_app:latest
+          image: example-web-app:latest
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8080

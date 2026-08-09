@@ -26,11 +26,11 @@ kubectl apply -n argocd --server-side --force-conflicts \
 kubectl wait --for=condition=available deployment --all -n argocd --timeout=180s
 ```
 
-Point it at this repository with [kubernetes-bootstrap/argocd-application.yaml](../../kubernetes-bootstrap/argocd-application.yaml).  
-It syncs the top level of the `kubernetes-files` directory from the `main` branch into the `example-web-app` namespace,
+Point it at this repository with [kubernetes/bootstrap/argocd-application.yaml](../../kubernetes/bootstrap/argocd-application.yaml).  
+It syncs the top level of the `kubernetes/manifest` directory from the `main` branch into the `example-web-app` namespace,
 so Argo CD deploys the entire application and keeps it in sync with Git on its own:
 ```sh
-kubectl apply -f kubernetes-bootstrap/argocd-application.yaml
+kubectl apply -f kubernetes/bootstrap/argocd-application.yaml
 kubectl get application -n argocd example-web-app   # SYNC STATUS becomes Synced, HEALTH Healthy
 kubectl get pods -n example-web-app                 # example-web-app and valkey, now reconciled by Argo CD
 ```

@@ -1,0 +1,39 @@
+# Parallel computing with MPI + OpenMP across a set of identical container "nodes".
+#
+# A single mpi-nodes service, scaled to several replicas, where each replica runs sshd.
+# MPI ranks are launched into them over SSH by mpirun and executed inside one replica via run-pi-estimation.sh.
+# One rank per node, several OpenMP threads per rank.
+
+x-logging: &logging
+  driver: "json-file"
+  options:
+    max-file: "5"
+    max-size: "10m"
+
+services:
+  mpi-nodes:
+    image: example-parallel-computing
+    networks:
+      - mpi
+    logging: *logging
+    deploy:
+      replicas: 3
+      # mode: global  # Swarm mode: Use this instead of 'replicas'
+      resources:
+        limits:
+          cpus: "0.34"     # Per replica; 3 x 0.34 ~= 1 CPU total
+          memory: 128M     # Per replica; 3 x 128M ~= 384 MB total
+    # gpus: all   # Swarm mode: enable to mount all availabe GPUs on a host
+
+networks:
+  mpi:
+
+
+# # Build the image and start the nodes from the project root:
+# docker build -t example-parallel-computing ./data/example-parallel-computing
+# docker compose -f compose-files/docker-compose.parallel-computing.yml up -d
+#
+# # Each replica idles with `sshd` until the job is launched on one node:
+# docker compose -f compose-files/docker-compose.parallel-computing.yml exec mpi-nodes /home/mpiuser/run-pi-estimation.sh
+#
+# docker compose -f compose-files/docker-compose.parallel-computing.yml down

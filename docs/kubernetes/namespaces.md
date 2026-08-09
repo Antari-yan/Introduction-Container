@@ -20,8 +20,8 @@ kubectl config set-context --current --namespace=example-web-app
 
 ### LimitRange and ResourceQuota
 Two namespaced objects keep a single `Namespace` from consuming everything (useful when several teams or environments share a cluster):
-  - [LimitRange](../../kubernetes-files/example-web-app-limitrange.yaml): Per-container defaults and bounds. Containers without `requests`/`limits` get the defaults, and values outside the allowed min/max are rejected.
-  - [ResourceQuota](../../kubernetes-files/example-web-app-resourcequota.yaml): A cap on the namespace as a whole, e.g. total CPU/memory requested and limited, or the number of objects of a kind.
+  - [LimitRange](../../kubernetes/manifests/example-web-app-limitrange.yaml): Per-container defaults and bounds. Containers without `requests`/`limits` get the defaults, and values outside the allowed min/max are rejected.
+  - [ResourceQuota](../../kubernetes/manifests/example-web-app-resourcequota.yaml): A cap on the namespace as a whole, e.g. total CPU/memory requested and limited, or the number of objects of a kind.
 ```sh
 kubectl describe resourcequota -n example-web-app
 kubectl describe limitrange -n example-web-app

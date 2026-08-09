@@ -3,7 +3,7 @@ While there are many prebuilt images, most real-world projects need custom image
 The recipe for building an image is most commonly called a `Dockerfile`, which is also the default filename.  
 `Containerfile` is part of the [container-libs](https://github.com/containers/container-libs/tree/main) and uses the same syntax,
 it is what `podman` and it's buildkit `buildah` defaults to.  
-Docker hs it's own buildkit `buildx`.
+Docker has it's own buildkit `buildx`.
 
 The reference fo both can be found here:
   - [Dockerfile](https://docs.docker.com/reference/dockerfile)

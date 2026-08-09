@@ -3,7 +3,7 @@ A `Deployment` updates `pods` gradually, keeping the application available durin
 
 Change the image and follow the rollout:
 ```sh
-kubectl set image deployment/example-web-app example-web-app=simple_python_web_app:v2
+kubectl set image deployment/example-web-app example-web-app=example-web-app:v2
 kubectl rollout status deployment/example-web-app
 kubectl rollout history deployment/example-web-app
 ```

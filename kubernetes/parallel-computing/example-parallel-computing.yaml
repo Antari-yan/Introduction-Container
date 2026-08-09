@@ -1,0 +1,80 @@
+# Parallel computing with MPI + OpenMP on Kubernetes via the Kubeflow MPI Operator.
+#
+# Requires the MPI Operator and its MPIJob CRD to be installed first.
+
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: example-parallel-computing
+
+---
+apiVersion: kubeflow.org/v2beta1
+kind: MPIJob
+metadata:
+  name: pi-estimation
+  namespace: example-parallel-computing
+spec:
+  slotsPerWorker: 1   # one MPI rank per worker
+  runPolicy:
+    cleanPodPolicy: Running  # remove the worker pods once the job finishes
+  sshAuthMountPath: /home/mpiuser/.ssh
+  mpiReplicaSpecs:
+    Launcher:
+      replicas: 1
+      template:
+        spec:
+          containers:
+            - name: mpi-launcher
+              image: example-parallel-computing:latest
+              imagePullPolicy: IfNotPresent
+              securityContext:
+                runAsUser: 1000   # mpiuser
+              command:
+                - mpirun
+              args:
+                - -np
+                - "3"
+                - --bind-to
+                - none  # let each rank's OpenMP threads use all cores
+                - --mca
+                - btl
+                - tcp,self
+                - -x
+                - OMP_NUM_THREADS=2
+                - /home/mpiuser/pi-estimation
+              resources:
+                requests:
+                  cpu: 250m
+                  memory: 64Mi
+                limits:
+                  cpu: "0.34"
+                  memory: 128Mi
+    Worker:
+      replicas: 3
+      template:
+        spec:
+          # runtimeClassName: nvidia  # k3s/k3d: required, or pods start without GPU libs
+          # # AMD uses the host amdgpu driver via the device plugin instead
+          # # Add nodeSelector/tolerations for GPU nodes as needed
+          containers:
+            - name: mpi-worker
+              image: example-parallel-computing:latest
+              imagePullPolicy: IfNotPresent
+              securityContext:
+                runAsUser: 1000    # mpiuser
+              command:
+                - /usr/sbin/sshd
+              args:
+                - -De
+                - -f
+                - /home/mpiuser/.sshd_config
+              resources:
+                requests:
+                  cpu: 250m
+                  memory: 64Mi
+                limits:
+                  cpu: "0.34"
+                  memory: 128Mi
+                  # nvidia.com/gpu: 1   # Enable to add a Nvidia GPU
+                  # amd.com/gpu: 1      # Enable to add an AMD GPU

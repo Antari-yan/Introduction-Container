@@ -1,6 +1,6 @@
 # Gateway API equivalent of example-web-app-ingress.yaml.
 # It uses its own host so it can run alongside the Ingress without both claiming the same one.
-# The Gateway API CRDs ship with k3s but the Traefik Gateway provider needs to be enabled via kubernetes-bootstrap/traefik-gateway-config.yaml.
+# The Gateway API CRDs ship with k3s but the Traefik Gateway provider needs to be enabled via kubernetes/bootstrap/traefik-gateway-config.yaml.
 ---
 apiVersion: gateway.networking.k8s.io/v1
 kind: Gateway

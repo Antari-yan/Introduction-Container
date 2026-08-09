@@ -2,6 +2,8 @@ data/**/*
 !data/index.html
 !data/example-web-app/
 !data/example-web-app/**
+!data/example-parallel-computing/
+!data/example-parallel-computing/**
 
 # generated on demand by the Podman section (helm template ... > data/webserver-k8s.yaml)
 data/webserver-k8s.yaml

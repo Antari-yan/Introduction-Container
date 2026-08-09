@@ -45,7 +45,7 @@ Set the `CR` variable depending on what is installed, so the underlying containe
 
 Create a cluster with 1 server, 2 agents and the loadbalancer mapping host port `8080` to port `80` inside the cluster, from a config file:
 ```sh
-k3d cluster create --config kubernetes-bootstrap/k3d-config.yaml
+k3d cluster create --config kubernetes/bootstrap/k3d-config.yaml
 
 # k3d cluster create introduction \
 #   --servers 1 \

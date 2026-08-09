@@ -10,7 +10,7 @@ spec:
   source:
     repoURL: https://github.com/Antari-yan/Introduction-Container.git
     targetRevision: main
-    path: kubernetes-files
+    path: kubernetes/manifests
   destination:
     server: https://kubernetes.default.svc   # the cluster Argo CD runs in
     namespace: example-web-app

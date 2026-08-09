@@ -1,5 +1,5 @@
 # Self-healing and Autoscaling
-The self-healing mechanisim in kuberentes ensures that the desired state matches with the real state (if possible):
+The self-healing mechanism in kubernrtes ensures that the desired state matches with the real state (if possible):
 ```sh
 # Delete a pods and see that it automatically is recreated
 kubectl delete pod $(kubectl get pods -l app=example-web-app -o jsonpath='{.items[0].metadata.name}')
@@ -11,7 +11,7 @@ Kubernetes can scale automatically on three levels:
   - `VerticalPodAutoscaler` (VPA): Adjusts a `pod`'s CPU/memory requests and limits to match actual usage. Installed separately.
   - `Cluster Autoscaler` / [Karpenter](https://github.com/kubernetes-sigs/karpenter): Adds or removes whole nodes when `pods` cannot be scheduled or nodes sit idle. Depends on the infrastructure.
 
-The web app already has an HPA ([example-web-app-hpa.yaml](../../kubernetes-files/example-web-app-hpa.yaml), 2-5 replicas at 50% CPU):
+The web app already has an HPA ([example-web-app-hpa.yaml](../../kubernetes/manifests/example-web-app-hpa.yaml), 2-5 replicas at 50% CPU):
 ```sh
 kubectl get hpa example-web-app
 ```

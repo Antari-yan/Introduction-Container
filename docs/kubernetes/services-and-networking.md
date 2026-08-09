@@ -6,17 +6,17 @@ Different `Service` types can be used:
   - `ClusterIP` (default): Only reachable inside the cluster.
   - `NodePort`: Exposes the `Service` on a port on every node.
   - `LoadBalancer`: Requests an external IP, in `k3s` implemented by `ServiceLB`.
-  - [Ingress](../../kubernetes-files/example-web-app-ingress.yaml) is not a `Service` type, it is a separate object routing HTTP(S) by host/path to `ClusterIP` `Services`.
+  - [Ingress](../../kubernetes/manifests/example-web-app-ingress.yaml) is not a `Service` type, it is a separate object routing HTTP(S) by host/path to `ClusterIP` `Services`.
 
 In-cluster DNS always follows the pattern `<service>.<namespace>.svc.cluster.local`.  
 Inside the same namespace the short `<service>` name can also be used.
 
 Resolve the `Service` names from a temporary `pod` (DNS works regardless of `NetworkPolicies`):
 ```sh
-# kubernetes-files/example-web-app-service.yaml
+# kubernetes/manifests/example-web-app-service.yaml
 kubectl run tmp --rm -it --image=busybox --restart=Never -- nslookup example-web-app.example-web-app.svc.cluster.local
 
-# kubernetes-files/valkey-service.yaml
+# kubernetes/manifests/valkey-service.yaml
 kubectl run tmp --rm -it --image=busybox --restart=Never -- nslookup valkey.example-web-app.svc.cluster.local
 ```
 
@@ -33,11 +33,11 @@ Compared to `Ingress` it natively supports what previously needed controller-spe
 like header-based routing, traffic splitting (e.g. canary releases) and routes across namespaces.  
 It is also portable across implementations (Traefik, Cilium, Envoy/Istio, NGINX, ...).
 
-[example-web-app-gateway.yaml](../../kubernetes-files/example-web-app-gateway.yaml) expresses the same routing as the `Ingress`, on its own host so the two run side by side.
+[example-web-app-gateway.yaml](../../kubernetes/manifests/example-web-app-gateway.yaml) expresses the same routing as the `Ingress`, on its own host so the two run side by side.
 
 The Gateway API CRDs ship with `k3s`, but the Traefik Gateway provider is off by default and needs to be enabled:
 ```sh
-kubectl apply -f kubernetes-bootstrap/traefik-gateway-config.yaml
+kubectl apply -f kubernetes/bootstrap/traefik-gateway-config.yaml
 kubectl -n kube-system rollout status deployment/traefik   # wait for Traefik to re-roll with the new config
 kubectl get gatewayclass                                    # "traefik" now exists
 kubectl get gateway,httproute -n example-web-app            # the Gateway is now accepted
@@ -48,7 +48,7 @@ curl http://example-web-app-gateway.k3d.localhost:8080
 By default every `pod` can talk to every `pod` in any namespace.  
 This can be restricted with a `NetworkPolicy`, so that once a `pod` is selected by any policy, all traffic that is not explicitly allowed is denied.
 
-[networkpolicy.yaml](../../kubernetes-files/networkpolicy.yaml) denies all ingress, then allows exactly what the app needs:  
+[networkpolicy.yaml](../../kubernetes/manifests/networkpolicy.yaml) denies all ingress, then allows exactly what the app needs:  
   - `example-web-app` reachable on 8080 from the ingress controller and from `pods` labeled `access=example-web-app`
   - `valkey` reachable on 6379 only from the `example-web-app` `pods`
 

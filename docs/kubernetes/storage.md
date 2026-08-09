@@ -2,7 +2,7 @@
 A `PersistentVolumeClaim` (PVC) requests storage without caring where it comes from.  
 A `StorageClass` provisions a matching `PersistentVolume` (PV) automatically, in `k3s` the [local-path](https://github.com/rancher/local-path-provisioner) provisioner is available by default.  
 
-The valkey example runs as a `StatefulSet` ([valkey-statefulset.yaml](../../kubernetes-files/valkey-statefulset.yaml)) with a `volumeClaimTemplate`, so each replica gets its own PVC and persists its data to it:
+The valkey example runs as a `StatefulSet` ([valkey-statefulset.yaml](../../kubernetes/manifests/valkey-statefulset.yaml)) with a `volumeClaimTemplate`, so each replica gets its own PVC and persists its data to it:
 ```sh
 kubectl get pvc
 kubectl get pv

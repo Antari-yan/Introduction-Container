@@ -2,7 +2,7 @@
 A ConfigMap` holds non-confidential configuration, a `Secret` holds sensitive data (only `base64` encoded, not encrypted).  
 Both can be injected as environment variables or mounted as files.
 
-The web app reads its `GREETING` from [example-web-app-configmap.yaml](../../kubernetes-files/example-web-app-configmap.yaml) (injected with `envFrom`) and
+The web app reads its `GREETING` from [example-web-app-configmap.yaml](../../kubernetes/manifests/example-web-app-configmap.yaml) (injected with `envFrom`) and
 its `VALKEY_PASSWORD` from the `valkey-credentials` `Secret` (injected with `secretKeyRef`).
 
 Change the greeting and roll it out:
